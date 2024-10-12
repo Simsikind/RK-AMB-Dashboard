@@ -3,6 +3,10 @@ class Patient:
         self.Num = Num
         pass
 
+    def setNum(self, Num):
+        self.Num = Num
+        pass
+
     def setAlarmt(self, Alarmtime):
         self.Alarmt = Alarmtime
         pass
@@ -42,7 +46,3 @@ class Patient:
     def setNaca(self, Naca):
         self.Naca = Naca
         pass
-
-AmbNum = "xxxx/xxxxx-x"
-AmbName = "Ambulanzname"
-AmbDate = "DD:MM:YYYY"
