@@ -7,9 +7,9 @@ import csv
 import os
 import re
 
-AmbNum = "0000/00000-0"
-AmbName = "TestAmb"
-AmbDate = "01.01.2000"
+AmbNum = ""
+AmbName = ""
+AmbDate = ""
 Betreuungen = 0
 CurrentPatindex = 0
 Patlist = []
@@ -59,6 +59,8 @@ def latestpatindex():                                       #gets the index of t
     return z-1
 
 def Update_lables():
+    #main_window.title=AmbName +'Amulanz-Dashboard'
+    
     l_Pat.config(text=str(latestpatindex()) + " Patienten")
     l_Betreuungen.config(text=str(Betreuungen) + " Betreuungen")
 
@@ -277,10 +279,10 @@ def Button_read_list():
     Update_lables()
 
 def ExportPatlist():
-    print("Exportiere die Patientenliste")
-    with open('Export/' + AmbName + '.csv', 'w', newline='') as csvfile:
+    path = 'Export/' + re.sub(r'\W+', '_', AmbNum) + "_" + AmbName + '.csv'
+    with open(path, 'w', newline='') as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=';',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        spamwriter.writerow(["Pat-Nr", "B.Grund", "BO", "BO-Zeit", "HST-Zeit", "Abtransport", "NACA", "Fertig"])
+        spamwriter.writerow(["Pat-Nr", "B.Grund", "BO", "BO-Zeit", "HST-Zeit", "Abtransport", "NACA", "Fertig", str(Betreuungen) + " Betreuungen"])
         for x in range(len(Patlist)):
             if x > 0:
                 is_finished = "Nein"
@@ -297,6 +299,7 @@ def ExportPatlist():
                     Patlist[x].Naca, 
                     is_finished
                 ])
+    print("Patientenliste exportiert")
 
 def setDatfromFile(path):
     global AmbNum
@@ -337,7 +340,7 @@ def Button_saveDat():
     Update_lables()
 
 
-main_window = tkinter.Tk(className=' Simons Amulanz-Dashboard')
+main_window = tkinter.Tk(className='~Amulanz-Dashboard~')
 
 b_newBet = tkinter.Button(main_window, text='Neue Betreuung', command=lambda: (NewBetreuung_Button()), bg="green")
 b_newBet.grid(column=2, row=0)
