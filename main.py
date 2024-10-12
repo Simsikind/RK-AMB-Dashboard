@@ -1,3 +1,4 @@
+import tkinter.filedialog
 import functions
 from datetime import datetime
 import tkinter
@@ -159,6 +160,7 @@ def Edit_pat(index):
         Patlist[index].setEndt(e_CurrentPatEndt.get()),
         Patlist[index].setNaca(e_CurrentPatNACA.get()),
         Patlist[index].setfinished(Done.get()),
+        write_list(Patlist),
         Update_lables(), 
         Edit.destroy()
         ])
@@ -192,6 +194,7 @@ def DelPat():
         Patlist.pop()
         print("Patient mit Nummer ", CurrentPatindex, " gelöscht")
         CurrentPatindex = CurrentPatindex -1
+        write_list(Patlist)
 
 def DelPat_Button():
     DelPat()
@@ -294,6 +297,44 @@ def ExportPatlist():
                     Patlist[x].Naca, 
                     is_finished
                 ])
+
+def setDatfromFile(path):
+    global AmbNum
+    global AmbName
+    global AmbDate
+    global Betreuungen
+    File=open(path, "r")
+    AmbNum = re.sub('\n', '', File.readline())
+    AmbName = re.sub('\n', '', File.readline())
+    AmbDate = re.sub('\n', '', File.readline())
+    Betreuungen = int(re.sub('\n', '', File.readline()))
+    File.close()
+
+def Button_setDat():
+    filepath = tkinter.filedialog.askopenfile(filetypes=[("Data-Datei",".dat")]).name
+    setDatfromFile(filepath)
+    Button_read_list()
+    Update_lables()
+
+def saveDatinFile(path):
+    global AmbNum
+    global AmbName
+    global AmbDate
+    global Betreuungen
+    tmp=open(path, "w+")
+    tmp.close()
+    File=open(path, "w+")
+    File.writelines(AmbNum + "\n")
+    File.writelines(AmbName + "\n")
+    File.writelines(AmbDate + "\n")
+    File.writelines(str(Betreuungen))
+    File.close()
+
+def Button_saveDat():
+    filepath = tkinter.filedialog.asksaveasfile(filetypes=[("Data-Datei",".dat")]).name
+    saveDatinFile(filepath)
+    Button_read_list()
+    Update_lables()
 
 
 main_window = tkinter.Tk(className=' Simons Amulanz-Dashboard')
@@ -398,8 +439,16 @@ l_AmbName.grid(row=14, column=0)
 l_AmbDate = tkinter.Label(main_window, text=AmbDate, font=1)
 l_AmbDate.grid(row=16, column=0)
 
-b_init = tkinter.Button(main_window, text="Daten Setzen", command=lambda:[Init_Stats()])
-b_init.grid(row=15, column=1)
+b_init = tkinter.Button(main_window, text="Daten manuell Setzen", command=lambda:[Init_Stats()])
+b_init.grid(row=14, column=1)
+
+b_loaddat = tkinter.Button(main_window, text="Daten aus Datei lesen", command=lambda:[Button_setDat()])
+b_loaddat.grid(row=15, column=1)
+
+b_savedat = tkinter.Button(main_window, text="Daten in Datei speichern", command=lambda:[Button_saveDat()])
+b_savedat.grid(row=16, column=1)
+
+
 
 b_save = tkinter.Button(main_window, text="Patienten speichern", command=lambda:[write_list(Patlist)])
 b_save.grid(row=14, column=2)
