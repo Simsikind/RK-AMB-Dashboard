@@ -46,3 +46,14 @@ class Patient:
     def setNaca(self, Naca):
         self.Naca = Naca
         pass
+
+    Alarmt = "xx:xx"
+    Alarmstr = "Berufungsgrund"
+    BOt = "xx:xx"
+    BOplace = "Berufungsort"
+    HSTt = "xx:xx"
+    TransportAgency = "Rettungsorganisation"
+    TransOrdert = "xx:xx"
+    Endt = "xx:xx"
+    finished = False
+    Naca = int(0)
