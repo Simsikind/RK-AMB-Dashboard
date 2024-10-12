@@ -1,6 +1,6 @@
 import tkinter.filedialog
 import functions
-from datetime import datetime
+#from datetime import datetime
 import tkinter
 import pickle
 import csv
@@ -15,6 +15,7 @@ CurrentPatindex = 0
 Patlist = []
 Patlist.append(functions.Patient(0))                        #Add Patient zero, so thet the Index ist the same as the "Ablagenummer"
 Patlist[0].setfinished(True)
+Patlist[0].setAlarmt("-")
 
 while os.path.exists("Export")==False:
     os.mkdir("Export")
@@ -349,7 +350,7 @@ l_Betreuungen.grid(column=1, row=0)
 b_DelBet = tkinter.Button(main_window, text='Betreuung Löschen', command=lambda: (DelBetreuung_Button()), bg="green")
 b_DelBet.grid(column=0, row=0)
 
-b_newPat = tkinter.Button(main_window, text='Aktuellen Pat. löschen', command=lambda: (DelPat_Button()), bg="red")
+b_newPat = tkinter.Button(main_window, text='Neuesten Pat. löschen', command=lambda: (DelPat_Button()), bg="red")
 b_newPat.grid(column=0, row=1)
 l_Pat = tkinter.Label(main_window, text=str(latestpatindex()) + " Patienten")
 l_Pat.grid(column=1, row=1)

@@ -1,6 +1,10 @@
+import datetime
+
 class Patient:
     def __init__(self, Num):
         self.Num = Num
+        currentTime = datetime.datetime.now()
+        self.Alarmt = str(currentTime.strftime("%H:%M"))
         pass
 
     def setNum(self, Num):
@@ -44,15 +48,15 @@ class Patient:
         pass
 
     def getInfos(self):
-        print("Abruufen der Infos von Patient", self.Num)
+        print("Abrufen der Infos von Patient", self.Num)
         return str(self.Num)+str(self.Alarmt)+str(self.Alarmstr)+str(self.BOt)+str(self.BOplace)+str(self.HSTt)+str(self.TransportAgency)+str(self.Endt)+str(self.finished)+tr(self.Naca)
 
-    Alarmt = "xx:xx"
-    Alarmstr = "Berufungsgrund"
-    BOt = "xx:xx"
-    BOplace = "Berufungsort"
-    HSTt = "xx:xx"
-    TransportAgency = "Nein"
-    Endt = "xx:xx"
+    Alarmt = "-"
+    Alarmstr = "-"
+    BOt = "-"
+    BOplace = "-"
+    HSTt = "-"
+    TransportAgency = "-"
+    Endt = "-"
     finished = False
     Naca = int(0)
