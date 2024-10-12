@@ -31,10 +31,6 @@ class Patient:
         self.TransportAgency = TrOrg
         pass
 
-    def setTransOrdert(self, TrOt):
-        self.TransOrdt = TrOt
-        pass
-
     def setEndt(self, Endt):
         self.Endt = Endt
         pass
@@ -47,13 +43,16 @@ class Patient:
         self.Naca = Naca
         pass
 
+    def getInfos(self):
+        print("Abruufen der Infos von Patient", self.Num)
+        return str(self.Num)+str(self.Alarmt)+str(self.Alarmstr)+str(self.BOt)+str(self.BOplace)+str(self.HSTt)+str(self.TransportAgency)+str(self.Endt)+str(self.finished)+tr(self.Naca)
+
     Alarmt = "xx:xx"
     Alarmstr = "Berufungsgrund"
     BOt = "xx:xx"
     BOplace = "Berufungsort"
     HSTt = "xx:xx"
-    TransportAgency = "Rettungsorganisation"
-    TransOrdert = "xx:xx"
+    TransportAgency = "Nein"
     Endt = "xx:xx"
     finished = False
     Naca = int(0)

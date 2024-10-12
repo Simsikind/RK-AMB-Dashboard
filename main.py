@@ -1,16 +1,27 @@
 import functions
 from datetime import datetime
 import tkinter
+import pickle
+import csv
+import os
+import re
 
-AmbNum = "xxxx/xxxxx-x"
-AmbName = "Ambulanzname"
-AmbDate = "DD:MM:YYYY"
+AmbNum = "0000/00000-0"
+AmbName = "TestAmb"
+AmbDate = "01.01.2000"
 Betreuungen = 0
 CurrentPatindex = 0
 Patlist = []
 Patlist.append(functions.Patient(0))                        #Add Patient zero, so thet the Index ist the same as the "Ablagenummer"
 Patlist[0].setfinished(True)
 
+while os.path.exists("Export")==False:
+    os.mkdir("Export")
+    print("Ordner 'Export' estellt")
+
+while os.path.exists("PatDat")==False:
+    os.mkdir("PatDat")
+    print("Ordner 'PatDat' estellt")
 
 def setNum(str):
     global AmbNum
@@ -77,20 +88,20 @@ def Edit_pat(index):
     l_CurrentPatNum.grid(column=1, row=3)
     
 
-    l_textr4 = tkinter.Label(Edit, text="Einsatzbeginn: ")
+    l_textr4 = tkinter.Label(Edit, text="Einsatzbeginn:")
     l_textr4.grid(column=0, row=4)
     e_CurrentPatAlarmt = tkinter.Entry(Edit)
     e_CurrentPatAlarmt.insert(0, str(Patlist[index].Alarmt))
     e_CurrentPatAlarmt.grid(column=1, row=4)
     Patlist[index].setAlarmt(e_CurrentPatAlarmt.get())
 
-    l_textr5 = tkinter.Label(Edit, text="Berufungsgrund: ")
+    l_textr5 = tkinter.Label(Edit, text="Berufungsgrund:")
     l_textr5.grid(column=0, row=5)
     e_CurrentPatAlarmstr = tkinter.Entry(Edit)
     e_CurrentPatAlarmstr.insert(0, str(Patlist[index].Alarmstr))
     e_CurrentPatAlarmstr.grid(column=1, row=5)
 
-    l_textr6 = tkinter.Label(Edit, text="Berufungsort: ")
+    l_textr6 = tkinter.Label(Edit, text="Berufungsort:")
     l_textr6.grid(column=0, row=6)
     e_CurrentPatBO = tkinter.Entry(Edit)
     e_CurrentPatBO.insert(0, str(Patlist[index].BOplace))
@@ -102,32 +113,32 @@ def Edit_pat(index):
     e_CurrentPatBot.insert(0, str(Patlist[index].BOt))
     e_CurrentPatBot.grid(column=1, row=7)
 
-    l_textr8 = tkinter.Label(Edit, text="Zeit auf der Behandlung: ")
+    l_textr8 = tkinter.Label(Edit, text="Zeit auf der Behandlung:")
     l_textr8.grid(column=0, row=8)
     e_CurrentPatHSTt = tkinter.Entry(Edit)
     e_CurrentPatHSTt.insert(0, str(Patlist[index].HSTt))
     e_CurrentPatHSTt.grid(column=1, row=8)
 
-    l_textr9 = tkinter.Label(Edit, text="Abtransport (Wenn ja welche Orga): ")
+    l_textr9 = tkinter.Label(Edit, text="Abtransport-Organisation:")
     l_textr9.grid(column=0, row=9)
     e_CurrentPatTransportAgency = tkinter.Entry(Edit)
     e_CurrentPatTransportAgency.insert(0, str(Patlist[index].TransportAgency))
     e_CurrentPatTransportAgency.grid(column=1, row=9)
 
-    l_textr10 = tkinter.Label(Edit, text="Einsatzende: ")
+    l_textr10 = tkinter.Label(Edit, text="Einsatzende:")
     l_textr10.grid(column=0, row=10)
     e_CurrentPatEndt = tkinter.Entry(Edit)
     e_CurrentPatEndt.insert(0, str(Patlist[index].Endt))
     e_CurrentPatEndt.grid(column=1, row=10)
 
-    l_textr11 = tkinter.Label(Edit, text="Protokoll fertig: ")
+    l_textr11 = tkinter.Label(Edit, text="Protokoll fertig:")
     l_textr11.grid(column=0, row=11)
     c_CurrentPatfin = tkinter.Checkbutton(Edit,variable=Done)
     c_CurrentPatfin.grid(column=1, row=11)
     if Patlist[index].finished == 1:
         c_CurrentPatfin.select()
 
-    l_textr12 = tkinter.Label(Edit, text="NACA: ")
+    l_textr12 = tkinter.Label(Edit, text="NACA:")
     l_textr12.grid(column=0, row=12)
     e_CurrentPatNACA = tkinter.Entry(Edit)
     e_CurrentPatNACA.insert(0, str(Patlist[index].Naca))
@@ -174,7 +185,18 @@ def NewPat_Button():                                         #creates a new pati
 
     b_OK.pack()
     b_Cancel.pack()
-   
+
+def DelPat():
+    global CurrentPatindex
+    if CurrentPatindex > 0:
+        Patlist.pop()
+        print("Patient mit Nummer ", CurrentPatindex, " gelöscht")
+        CurrentPatindex = CurrentPatindex -1
+
+def DelPat_Button():
+    DelPat()
+    Update_lables()
+
 def NewBetreuung():
     global Betreuungen
     Betreuungen = Betreuungen + 1
@@ -228,6 +250,52 @@ def Init_Stats():
     b_OK.grid(row=3, column=1)
     b_Cancel.grid(row=3, column=0)
 
+def write_list(list):
+    global AmbName
+    global AmbDate
+    global AmbNum
+    with open("PatDat/" + re.sub('[^0-9]', '', AmbNum) +".ambdat", "wb") as fp:
+        pickle.dump(list, fp)
+        print("Daten in Datei geschrieben")
+
+def read_list():
+    global AmbName
+    global AmbDate
+    with open("PatDat/" + re.sub('[^0-9]', '', AmbNum) +".ambdat", "rb") as fp:
+        n_list = pickle.load(fp)
+        print("Daten aus Datei geladen")
+        return n_list
+
+def Button_read_list():
+    global Patlist
+    global CurrentPatindex
+    Patlist = read_list()
+    CurrentPatindex = 0
+    Update_lables()
+
+def ExportPatlist():
+    print("Exportiere die Patientenliste")
+    with open('Export/' + AmbName + '.csv', 'w', newline='') as csvfile:
+        spamwriter = csv.writer(csvfile, delimiter=';',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        spamwriter.writerow(["Pat-Nr", "B.Grund", "BO", "BO-Zeit", "HST-Zeit", "Abtransport", "NACA", "Fertig"])
+        for x in range(len(Patlist)):
+            if x > 0:
+                is_finished = "Nein"
+                if Patlist[x].finished == True:
+                    is_finished = "Ja"
+
+                spamwriter.writerow([
+                    Patlist[x].Num, 
+                    Patlist[x].Alarmstr, 
+                    Patlist[x].BOplace, 
+                    Patlist[x].BOt, 
+                    Patlist[x].HSTt, 
+                    Patlist[x].TransportAgency, 
+                    Patlist[x].Naca, 
+                    is_finished
+                ])
+
+
 main_window = tkinter.Tk(className=' Simons Amulanz-Dashboard')
 
 b_newBet = tkinter.Button(main_window, text='Neue Betreuung', command=lambda: (NewBetreuung_Button()), bg="green")
@@ -237,10 +305,12 @@ l_Betreuungen.grid(column=1, row=0)
 b_DelBet = tkinter.Button(main_window, text='Betreuung Löschen', command=lambda: (DelBetreuung_Button()), bg="green")
 b_DelBet.grid(column=0, row=0)
 
-b_newPat = tkinter.Button(main_window, text='Neuer Patient', command=lambda: (NewPat_Button()), bg="red")
-b_newPat.grid(column=2, row=1)
+b_newPat = tkinter.Button(main_window, text='Aktuellen Pat. löschen', command=lambda: (DelPat_Button()), bg="red")
+b_newPat.grid(column=0, row=1)
 l_Pat = tkinter.Label(main_window, text=str(latestpatindex()) + " Patienten")
 l_Pat.grid(column=1, row=1)
+b_newPat = tkinter.Button(main_window, text='Neuer Patient', command=lambda: (NewPat_Button()), bg="red")
+b_newPat.grid(column=2, row=1)
 
 l_sep_left = tkinter.Label(main_window, text="-----------------------")
 l_sep_center = tkinter.Label(main_window, text="----------------------")
@@ -249,62 +319,61 @@ l_sep_left.grid(column=0, row=2)
 l_sep_center.grid(column=1, row=2)
 l_sep_right.grid(column=2, row=2)
 
-l_textr3 = tkinter.Label(main_window, text="Akuell Angezeigter Pat Nr: ")
+l_textr3 = tkinter.Label(main_window, text="Akuell Angezeigter Pat Nr:")
 l_textr3.grid(column=0, row=3)
 l_CurrentPatNum = tkinter.Label(main_window, text= str(Patlist[CurrentPatindex].Num))
 l_CurrentPatNum.grid(column=1, row=3)
 
 
-l_textr4 = tkinter.Label(main_window, text="Einsatzbeginn: ")
+l_textr4 = tkinter.Label(main_window, text="Einsatzbeginn:")
 l_textr4.grid(column=0, row=4)
 l_CurrentPatAlarmt = tkinter.Label(main_window, text= str(Patlist[CurrentPatindex].Alarmt))
 l_CurrentPatAlarmt.grid(column=1, row=4)
 
 
-l_textr5 = tkinter.Label(main_window, text="Berufungsgrund: ")
+l_textr5 = tkinter.Label(main_window, text="Berufungsgrund:")
 l_textr5.grid(column=0, row=5)
 l_CurrentPatAlarmstr = tkinter.Label(main_window, text= str(Patlist[CurrentPatindex].Alarmstr))
 l_CurrentPatAlarmstr.grid(column=1, row=5)
 
 
-l_textr6 = tkinter.Label(main_window, text="Berufungsort: ")
+l_textr6 = tkinter.Label(main_window, text="Berufungsort:")
 l_textr6.grid(column=0, row=6)
 l_CurrentPatBO = tkinter.Label(main_window, text= str(Patlist[CurrentPatindex].BOplace))
 l_CurrentPatBO.grid(column=1, row=6)
 
 
-l_textr7 = tkinter.Label(main_window, text="Zeit am BO: ")
+l_textr7 = tkinter.Label(main_window, text="Zeit am BO:")
 l_textr7.grid(column=0, row=7)
 l_CurrentPatBot = tkinter.Label(main_window, text= str(Patlist[CurrentPatindex].BOt))
 l_CurrentPatBot.grid(column=1, row=7)
 
 
-l_textr8 = tkinter.Label(main_window, text="Zeit auf der Behandlung: ")
+l_textr8 = tkinter.Label(main_window, text="Zeit auf der Behandlung:")
 l_textr8.grid(column=0, row=8)
-print(Patlist[CurrentPatindex].HSTt)
 l_CurrentPatHSTt = tkinter.Label(main_window, text= str(Patlist[CurrentPatindex].HSTt))
 l_CurrentPatHSTt.grid(column=1, row=8)
 
 
-l_textr9 = tkinter.Label(main_window, text="Abtransport (Wenn ja welche Orga): ")
+l_textr9 = tkinter.Label(main_window, text="Abtransport-Organisation:")
 l_textr9.grid(column=0, row=9)
 l_CurrentPatTransA = tkinter.Label(main_window, text= str(Patlist[CurrentPatindex].TransportAgency))
 l_CurrentPatTransA.grid(column=1, row=9)
 
 
-l_textr10 = tkinter.Label(main_window, text="Einsatzende: ")
+l_textr10 = tkinter.Label(main_window, text="Einsatzende:")
 l_textr10.grid(column=0, row=10)
 l_CurrentPatEndt = tkinter.Label(main_window, text= str(Patlist[CurrentPatindex].Endt))
 l_CurrentPatEndt.grid(column=1, row=10)
 
 
-l_textr11 = tkinter.Label(main_window, text="Protokoll fertig: ")
+l_textr11 = tkinter.Label(main_window, text="Protokoll fertig:")
 l_textr11.grid(column=0, row=11)
 l_CurrentPatfin = tkinter.Label(main_window, text= str(Patlist[CurrentPatindex].finished))
 l_CurrentPatfin.grid(column=1, row=11)
 
 
-l_textr12 = tkinter.Label(main_window, text="NACA: ")
+l_textr12 = tkinter.Label(main_window, text="NACA:")
 l_textr12.grid(column=0, row=12)
 l_CurrentPatNACA = tkinter.Label(main_window, text= str(Patlist[CurrentPatindex].Naca))
 l_CurrentPatNACA.grid(column=1, row=12)
@@ -321,15 +390,29 @@ b_EditPat = tkinter.Button(main_window, width=20, text="Pat Bearbeiten", command
 b_EditPat.grid(row=13, column=1)
 
 l_AmbNum = tkinter.Label(main_window, text=AmbNum, font=1)
-l_AmbNum.grid(row=14, column=0)
+l_AmbNum.grid(row=15, column=0)
 
 l_AmbName = tkinter.Label(main_window, text=AmbName, font=1)
-l_AmbName.grid(row=15, column=0)
+l_AmbName.grid(row=14, column=0)
 
 l_AmbDate = tkinter.Label(main_window, text=AmbDate, font=1)
 l_AmbDate.grid(row=16, column=0)
 
 b_init = tkinter.Button(main_window, text="Daten Setzen", command=lambda:[Init_Stats()])
 b_init.grid(row=15, column=1)
+
+b_save = tkinter.Button(main_window, text="Patienten speichern", command=lambda:[write_list(Patlist)])
+b_save.grid(row=14, column=2)
+
+b_load = tkinter.Button(main_window, text="Patienten laden", command=lambda:[Button_read_list()])
+b_load.grid(row=15, column=2)
+
+b_export = tkinter.Button(main_window, text="Patienten Exportieren (csv)", command=lambda:[ExportPatlist()])
+b_export.grid(row=16, column=2)
+
+
+icon = tkinter.PhotoImage(file="image_files/RK.png")
+main_window.wm_iconphoto(False, icon)
+
 
 main_window.mainloop()
