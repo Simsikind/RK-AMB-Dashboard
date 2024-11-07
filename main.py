@@ -283,7 +283,7 @@ def ExportPatlist():
     path = 'Export/' + re.sub(r'\W+', '_', AmbNum) + "_" + AmbName + '.csv'
     with open(path, 'w', newline='') as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=';',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        spamwriter.writerow(["Pat-Nr", "B.Grund", "BO", "BO-Zeit", "HST-Zeit", "Abtransport", "NACA", "Fertig", str(Betreuungen) + " Betreuungen"])
+        spamwriter.writerow(["Pat-Nr","Alarmzeit", "B.Grund", "BO", "BO-Zeit", "HST-Zeit", "Abtransport", "NACA", "Fertig", str(Betreuungen) + " Betreuungen"])
         for x in range(len(Patlist)):
             if x > 0:
                 is_finished = "Nein"
@@ -291,7 +291,8 @@ def ExportPatlist():
                     is_finished = "Ja"
 
                 spamwriter.writerow([
-                    Patlist[x].Num, 
+                    Patlist[x].Num,
+                    Patlist[x].Alarmt, 
                     Patlist[x].Alarmstr, 
                     Patlist[x].BOplace, 
                     Patlist[x].BOt, 
