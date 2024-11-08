@@ -5,7 +5,7 @@ Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patienten
 ## Installation
 
 1. **Projekt herunterladen**:
-   - Besuchen Sie das GitHub-Repository und laden Sie das Projekt als `.zip` herunter.
+   - Besuchen Sie das [GitHub-Repository](https://github.com/Simsikind/RK-AMB-Dashboard) und laden Sie das Projekt als `.zip` herunter.
    - Entpacken Sie das `.zip`-Archiv an einem gewünschten Ort auf Ihrem Computer.
 
 2. **Anwendung starten**:
