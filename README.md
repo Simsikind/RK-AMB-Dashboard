@@ -1,6 +1,6 @@
 # Patientenverwaltung - Ambulanz Dashboard
 
-Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patientendaten in einer Ambulanz. Die Anwendung ermöglicht das Hinzufügen, Bearbeiten und Exportieren von Patienten- und Betreuungsdaten über eine grafische Benutzeroberfläche (GUI), die mit Python und Tkinter erstellt wurde.
+Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patientendaten im Zuge einer Ambulanz. Die Anwendung ermöglicht das Hinzufügen, Bearbeiten und Exportieren von Patienten- und Betreuungsdaten über eine grafische Benutzeroberfläche (GUI), die mit Python und Tkinter erstellt wurde.
 
 ## Installation
 
