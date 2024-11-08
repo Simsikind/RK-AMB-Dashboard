@@ -2,6 +2,16 @@
 
 Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patientendaten in einer Ambulanz. Die Anwendung ermöglicht das Hinzufügen, Bearbeiten und Exportieren von Patienten- und Betreuungsdaten über eine grafische Benutzeroberfläche (GUI), die mit Python und Tkinter erstellt wurde.
 
+## Installation
+
+1. **Projekt herunterladen**:
+   - Besuchen Sie das GitHub-Repository und laden Sie das Projekt als `.zip` herunter.
+   - Entpacken Sie das `.zip`-Archiv an einem gewünschten Ort auf Ihrem Computer.
+
+2. **Anwendung starten**:
+   - Die Anwendung kann über die enthaltene EXE-Datei gestartet werden.
+   - Alternativ können Sie den Quellcode ausführen (siehe dazu den Punkt **Anwendung starten**).
+
 ## Anwendung starten
 
 1. **Über die EXE-Datei**: Doppelklicken Sie die bereitgestellte EXE-Datei, um das Programm zu starten.
@@ -19,7 +29,7 @@ Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patienten
 ### Hauptfunktionen
 
 1. **Patienten hinzufügen/löschen**:
-   - **Neuer Patient**: Fügt einen neuen Patienten mit einer eindeutigen ID zur Liste hinzu.
+   - **Neuer Patient**: Fügt einen neuen Patienten mit einer fortlaufenden, eindeutigen Ablagenummer (ID) zur Liste hinzu.
    - **Patient löschen**: Entfernt den zuletzt hinzugefügten Patienten aus der Liste.
 
 2. **Patientendaten bearbeiten**:
@@ -52,9 +62,9 @@ Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patienten
 ## Bekannte Einschränkungen
 
 - **Datensicherung**: Alle Patientendaten werden lokal als Binärdateien gespeichert und müssen manuell geladen und gespeichert werden.
-- **Datenintegrität**: Die Anwendung stellt sicher, dass keine Patientendaten ohne Bestätigung gelöscht werden, jedoch werden die Änderungen direkt in den Objekten vorgenommen und sind nach einer Bestätigung unwiderruflich.
+- **Datenintegrität**: Die Anwendung stellt sicher, dass keine Patientendaten als Textfile gespeichert werden. Daher sind die Daten nur mit dieser Anwendung verwendbar. Trotzdem dürfen in die Textfelder keine Daten eingetragen werden, die Drittparteien ein Zuordnen des Datensatzes zu realen Personen ermöglichen. Die Verantwortung hierfür liegt beim Benutzer.
 
-## Voraussetzungen
+## Voraussetzungen & Anpassungen
 
 Falls Sie den Quellcode anpassen und die EXE-Datei neu erstellen möchten, sind folgende Voraussetzungen erforderlich:
 
