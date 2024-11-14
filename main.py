@@ -7,9 +7,9 @@ import csv
 import os
 import re
 
-AmbNum = ""
-AmbName = ""
-AmbDate = ""
+AmbNum = "Ambulanznummer (bitte setzten)"
+AmbName = "Ambulanzname (bitte setzten)"
+AmbDate = "Datum (bitte setzten)"
 Betreuungen = 0
 CurrentPatindex = 0
 Patlist = []
@@ -435,13 +435,13 @@ b_nextPat.grid(row=13, column=2)
 b_EditPat = tkinter.Button(main_window, width=20, text="Pat Bearbeiten", command=lambda: (Edit_pat(CurrentPatindex)))
 b_EditPat.grid(row=13, column=1)
 
-l_AmbNum = tkinter.Label(main_window, text=AmbNum, font=1)
+l_AmbNum = tkinter.Label(main_window, text=AmbNum, font = "bold")
 l_AmbNum.grid(row=15, column=0)
 
-l_AmbName = tkinter.Label(main_window, text=AmbName, font=1)
+l_AmbName = tkinter.Label(main_window, text=AmbName, font = "bold")
 l_AmbName.grid(row=14, column=0)
 
-l_AmbDate = tkinter.Label(main_window, text=AmbDate, font=1)
+l_AmbDate = tkinter.Label(main_window, text=AmbDate, font = "bold")
 l_AmbDate.grid(row=16, column=0)
 
 b_init = tkinter.Button(main_window, text="Daten manuell Setzen", command=lambda:[Init_Stats()])
