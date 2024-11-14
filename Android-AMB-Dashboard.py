@@ -3,6 +3,7 @@
 #Für Windows bitte "AMB_Dashboard.exe verwenden"
 
 import main
+import functions
 import tkinter
 
 while(main):
