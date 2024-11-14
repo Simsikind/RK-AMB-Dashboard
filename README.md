@@ -20,7 +20,7 @@ Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patienten
 
 1. **Über die EXE-Datei**: Doppelklicken Sie die bereitgestellte EXE-Datei, um das Programm zu starten.
 2. **Auf Android mit PyDroid 3**:  
-   Falls Sie das Dashboard auf einem Android-Gerät verwenden möchten, öffnen Sie die Datei `Android-AMB-Dashboard.py` in der App **PyDroid 3** und führen Sie sie aus. PyDroid 3 ist eine Python-IDE für Android, die es ermöglicht, Python-Skripte direkt auf Ihrem Smartphone oder Tablet auszuführen.
+   Falls Sie das Dashboard auf einem Android-Gerät verwenden möchten, öffnen Sie die Datei `Android-AMB-Dashboard.py` in der App [PyDroid 3](https://play.google.com/store/apps/details?id=ru.iiec.pydroid3) und führen Sie sie aus. PyDroid 3 ist eine Python-IDE für Android, die es ermöglicht, Python-Skripte direkt auf Ihrem Smartphone oder Tablet auszuführen.
 
    **Hinweise zur Verwendung auf Android**:
    - Die Funktionalität des GUIs kann aufgrund der Touchscreen-Steuerung leicht abweichen. Zum Beispiel können Fenster möglicherweise nicht skaliert werden.
