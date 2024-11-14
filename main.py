@@ -470,3 +470,5 @@ main_window.wm_iconphoto(False, icon)
 
 
 main_window.mainloop()
+print("exit")
+exit()
