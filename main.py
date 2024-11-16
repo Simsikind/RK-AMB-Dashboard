@@ -17,9 +17,13 @@ Patlist.append(functions.Patient(0))                        #Add Patient zero, s
 Patlist[0].setfinished(True)
 Patlist[0].setAlarmt("-")
 
-while os.path.exists("Export")==False:
-    os.mkdir("Export")
-    print("Ordner 'Export' estellt")
+while os.path.exists("Userdata")==False:
+    os.mkdir("Userdata")
+    print("Ordner 'Userdata' estellt")
+
+while os.path.exists("Userdata/Export")==False:
+    os.mkdir("Userdata/Export")
+    print("Ordner 'Export' in 'Userdata' estellt")
 
 while os.path.exists("PatDat")==False:
     os.mkdir("PatDat")
@@ -80,6 +84,8 @@ def Update_lables():
     l_AmbNum.config(text=AmbNum)
     l_AmbName.config(text=AmbName)
     l_AmbDate.config(text=AmbDate)
+
+    main_window.title(AmbName + (" - Dashboard"))
 
 def Edit_pat(index):
     Done = tkinter.BooleanVar()
@@ -280,7 +286,7 @@ def Button_read_list():
     Update_lables()
 
 def ExportPatlist():
-    path = 'Export/' + re.sub(r'\W+', '_', AmbNum) + "_" + AmbName + '.csv'
+    path = 'Userdata/Export/' + re.sub(r'\W+', '_', AmbNum) + "_" + AmbName + '.csv'
     with open(path, 'w', newline='') as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=';',quotechar='|', quoting=csv.QUOTE_MINIMAL)
         spamwriter.writerow(["Pat-Nr","Alarmzeit", "B.Grund", "BO", "BO-Zeit", "HST-Zeit", "Abtransport", "NACA", "Fertig", str(Betreuungen) + " Betreuungen"])
@@ -341,7 +347,55 @@ def Button_saveDat():
     Button_read_list()
     Update_lables()
 
+def Patstats():
+    stats = tkinter.Toplevel(main_window)
+    Naca1 = 0
+    Naca2 = 0
+    Naca3 = 0
+    Naca4 = 0
+    Naca5 = 0
+    Naca6 = 0
+    Naca7 = 0
+    for element in Patlist:
+        if element.Naca == "1":
+            Naca1 = Naca1+1
+        if element.Naca == "2":
+             Naca2 = Naca2+1
+        if element.Naca == "3":
+             Naca3 = Naca3+1
+        if element.Naca == "4":
+             Naca4 = Naca4+1
+        if element.Naca == "5":
+             Naca5 = Naca5+1
+        if element.Naca == "6":
+             Naca6 = Naca6+1
+        if element.Naca == "7":
+             Naca7 = Naca7+1
+    
+    l_Betrr = tkinter.Label(stats, text=str(Betreuungen)+" Betreuuungen")
+    l_Betrr.grid(column=0, row=0)
 
+    l_naca1 = tkinter.Label(stats, text=str(Naca1)+" Naca1")
+    l_naca1.grid(column=0, row=1)
+
+    l_naca2 = tkinter.Label(stats, text=str(Naca2)+" Naca2")
+    l_naca2.grid(column=0, row=2)
+
+    l_naca3 = tkinter.Label(stats, text=str(Naca3)+" Naca3")
+    l_naca3.grid(column=0, row=3)
+
+    l_naca4 = tkinter.Label(stats, text=str(Naca4)+" Naca4")
+    l_naca4.grid(column=0, row=4)
+
+    l_naca5 = tkinter.Label(stats, text=str(Naca5)+" Naca5")
+    l_naca5.grid(column=0, row=5)
+
+    l_naca6 = tkinter.Label(stats, text=str(Naca6)+" Naca6")
+    l_naca6.grid(column=0, row=6)
+
+    l_naca7 = tkinter.Label(stats, text=str(Naca7)+" Naca7")
+    l_naca7.grid(column=0, row=7)
+        
 main_window = tkinter.Tk(className='~Amulanz-Dashboard~')
 
 b_newBet = tkinter.Button(main_window, text='Neue Betreuung', command=lambda: (NewBetreuung_Button()), bg="green")
@@ -462,8 +516,10 @@ b_load = tkinter.Button(main_window, text="Patienten laden", command=lambda:[But
 b_load.grid(row=15, column=2)
 
 b_export = tkinter.Button(main_window, text="Patienten Exportieren (csv)", command=lambda:[ExportPatlist()])
-b_export.grid(row=16, column=2)
+b_export.grid(row=17, column=2)
 
+b_stats = tkinter.Button(main_window, text="Statistik anzeigen", command=lambda:[Patstats()])
+b_stats.grid(row=16, column=2)
 
 icon = tkinter.PhotoImage(file="image_files/RK.png")
 main_window.wm_iconphoto(False, icon)

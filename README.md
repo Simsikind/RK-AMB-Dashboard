@@ -33,7 +33,7 @@ Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patienten
 ## Anwendung verwenden
 
 **WICHTIG**: Vor der Verwendung der Anwendung sollten die **Ambulanzdaten gesetzt** werden. Dies kann auf zwei Arten geschehen:
-   - Ambulanzdaten manuell eingeben und anschließend speichern.
+   - Ambulanzdaten manuell eingeben und anschließend speichern. Hierbei ist zu beachten, dass der Dateiname unbedingt mit `.dat` erweitert werden muss.
    - Ambulanzdaten aus einer Datei laden, die bereits die notwendigen Informationen enthält.
 
 ### Hauptfunktionen
@@ -52,12 +52,15 @@ Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patienten
    - **Neue Betreuung**: Fügt eine Betreuung zur Gesamtliste hinzu.
    - **Betreuung Löschen**: Entfernt die zuletzt hinzugefügte Betreuung.
 
-5. **Daten exportieren und speichern**:
+5. **Statistik**:
+   - Um eine Statistik der Patienten anzuzeigen, klicken Sie auf **Statistik anzeigen**
+
+6. **Daten exportieren und speichern**:
    - **Daten in Datei speichern**: Speichert alle Ambulanzdaten in einer `.dat`-Datei.
    - **Daten aus Datei laden**: Lädt Ambulanz- und Patientendaten aus einer `.dat`-Datei.
    - **Patientenliste exportieren**: Exportiert die aktuelle Patientenliste in eine CSV-Datei im Ordner `Export`.
 
-6. **Manuelle Einstellungen der Ambulanzdaten**:
+7. **Manuelle Einstellungen der Ambulanzdaten**:
    - Über das Menü **Daten manuell Setzen** können die Ambulanznummer, der Name und das Datum manuell eingestellt werden.
 
 ### Weitere Hinweise
@@ -89,3 +92,9 @@ Falls Sie den Quellcode anpassen und die EXE-Datei neu erstellen möchten, sind 
 Zusätzlich wird **PyInstaller** benötigt, um die EXE-Datei zu generieren:
 ```bash
 pip install pyinstaller
+```
+Die EXE-Datei kann dann einfach mit dem folgenden Befehl generiert werden:
+´´´bash
+build_dashboard
+´´´
+ 
