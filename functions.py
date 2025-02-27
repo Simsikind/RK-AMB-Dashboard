@@ -60,7 +60,7 @@ class Patient:
     BOt = "-"
     BOplace = "-"
     HSTt = "-"
-    HSTPlace = "Nicht zugeorndet"
+    HSTPlace = "Nicht zugeordnet"
     TransportAgency = "-"
     Endt = "-"
     finished = False

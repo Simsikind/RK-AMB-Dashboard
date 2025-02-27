@@ -21,7 +21,7 @@ def now():
 AmbNum = "Ambulanznummer (bitte setzten)"
 AmbName = "Ambulanzname (bitte setzten)"
 AmbDate = "Datum (bitte setzten)"
-max_counts = {"Nicht zugeorndet":100}
+max_counts = {"Nicht zugeordnet":100}
 filepath = ""
 Betreuungen = 0
 CurrentPatindex = 0
