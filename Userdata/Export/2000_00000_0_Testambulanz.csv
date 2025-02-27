@@ -1,8 +1,8 @@
-Pat-Nr;Alarmzeit;B.Grund;BO;BO-Zeit;HST-Zeit;Abtransport;NACA;Fertig;13 Betreuungen
-1;10:00;Schiefer;Nottendorfergasse 21;10:15;10:30;Belassen;1;Ja
-2;11:00;Kopfweh;Spallartgasse 10a;11:15;11:30;RK (KTW 060, blau);2;Ja
-3;12:00;Gest¸rzt. Schmerzen H¸fte;Karl-Sch‰fer-Straﬂe 8;12:15;12:30;MA70 (NKTW);3;Ja
-4;13:00;v.A. Stroke;Negerlegasse 4;13:15;13:30;MA70 (RTW);4;Ja
-5;14:00;ACS;Wiedner Hauptstraﬂe 32;14:15;14:30;MA70 (NEF+RTW);5;Ja
-6;15:00;Kollabiert, B-los;Oberlaaer Straﬂe 306;15:15;15:30;MA70 (C9);6;Ja
-7;16:00;Atmet nicht;Safargasse 4;16:15;16:30;Bestattung;7;Ja
+Pat-Nr;Alarmzeit;B.Grund;BO;BO-Zeit;HST-Zeit;Behandlungsstelle;Abtransport;NACA;Fertig;3 Betreuungen
+1;10:00;Schiefer;Nottendorfergasse 21;10:15;10:30;A;Belassen;1;Ja
+2;11:00;Kopfweh;Spallartgasse 10a;11:15;11:30;B;RK (KTW 060, blau);2;Ja
+3;12:00;Gest√ºrzt. Schmerzen H√ºfte;Karl-Sch√§fer-Stra√üe 8;12:15;12:30;B;MA70 (NKTW);4;Ja
+4;13:00;v.A. Stroke;Negerlegasse 4;13:15;13:30;A;MA70 (RTW);4;Ja
+5;14:00;ACS;Wiedner Hauptstra√üe 32;14:15;14:30;B;MA70 (NEF+RTW);5;Ja
+6;15:00;Kollabiert, B-los;Oberlaaer Stra√üe 306;15:15;15:30;A;MA70 (C9);6;Ja
+7;16:00;Atmet nicht;Safargasse 4;16:15;16:30;B;Bestattung;7;Ja

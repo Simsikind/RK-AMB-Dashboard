@@ -12,20 +12,11 @@ Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patienten
    - Die Anwendung kann über die enthaltene EXE-Datei gestartet werden.
    - Alternativ können Sie den Quellcode ausführen (siehe dazu den Punkt **Anwendung starten**).
 
-
-3. **Anwendung auf Android starten**:  
-   - Sie können das Dashboard auch auf einem Android-Gerät verwenden. Details zur Ausführung auf Android finden Sie unter dem Punkt **Anwendung starten – Auf Android mit PyDroid 3**.
-
 ## Anwendung starten
 
 1. **Über die EXE-Datei**: Doppelklicken Sie die bereitgestellte EXE-Datei, um das Programm zu starten.
-2. **Auf Android mit PyDroid 3**:  
-   Falls Sie das Dashboard auf einem Android-Gerät verwenden möchten, öffnen Sie die Datei `Android-AMB-Dashboard.py` in der App [PyDroid 3](https://play.google.com/store/apps/details?id=ru.iiec.pydroid3) und führen Sie sie aus. PyDroid 3 ist eine Python-IDE für Android, die es ermöglicht, Python-Skripte direkt auf Ihrem Smartphone oder Tablet auszuführen.
 
-   **Hinweise zur Verwendung auf Android**:
-   - Die Funktionalität des GUIs kann aufgrund der Touchscreen-Steuerung leicht abweichen. Zum Beispiel können Fenster möglicherweise nicht skaliert werden.
-   - Stellen Sie sicher, dass genügend Speicherplatz auf Ihrem Gerät vorhanden ist, insbesondere wenn Sie große Datenmengen exportieren oder laden.
-3. **Über den Quellcode**: Falls Sie die Anwendung aus dem Quellcode starten möchten, führen Sie `main.py` aus:
+2. **Über den Quellcode**: Falls Sie die Anwendung aus dem Quellcode starten möchten, führen Sie `main.py` aus:
     ```bash
     python main.py
     ```
@@ -43,7 +34,7 @@ Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patienten
    - **Patient löschen**: Entfernt den zuletzt hinzugefügten Patienten aus der Liste.
 
 2. **Patientendaten bearbeiten**:
-   - Wählen Sie einen Patienten aus und klicken Sie auf **Pat Bearbeiten**, um Details wie Alarmzeit, Berufungsgrund, Berufungsort, Zeit auf Behandlung, NACA-Wert, Abtransport-Organisation und andere Felder zu ändern.
+   - Wählen Sie einen Patienten aus und klicken Sie auf **Pat Bearbeiten**, um Details wie Alarmzeit, Berufungsgrund, Berufungsort, Zeit auf Behandlung, Behandlungsstelle, NACA-Wert, Abtransport-Organisation und andere Felder zu ändern.
 
 3. **Navigation**:
    - Mit den Buttons `>` und `<` kann zwischen Patienten gewechselt werden, um deren Daten anzuzeigen.
@@ -61,7 +52,7 @@ Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patienten
    - **Patientenliste exportieren**: Exportiert die aktuelle Patientenliste in eine CSV-Datei im Ordner `Export`.
 
 7. **Manuelle Einstellungen der Ambulanzdaten**:
-   - Über das Menü **Daten manuell Setzen** können die Ambulanznummer, der Name und das Datum manuell eingestellt werden.
+   - Über das Menü **Daten manuell Setzen** können die Ambulanznummer, der Name und das Datum manuell eingestellt werden. Weiters kann die Bettenaufteilung geändert werden.
 
 ### Weitere Hinweise
 
@@ -76,25 +67,3 @@ Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patienten
 
 - **Datensicherung**: Alle Patientendaten werden lokal als Binärdateien gespeichert und müssen manuell geladen und gespeichert werden.
 - **Datenintegrität**: Die Anwendung stellt sicher, dass keine Patientendaten als Textfile gespeichert werden. Daher sind die Daten nur mit dieser Anwendung verwendbar. Trotzdem dürfen in die Textfelder keine Daten eingetragen werden, die Drittparteien ein Zuordnen des Datensatzes zu realen Personen ermöglichen. Die Verantwortung hierfür liegt beim Benutzer.
-
-## Voraussetzungen & Anpassungen
-
-Falls Sie den Quellcode anpassen und die EXE-Datei neu erstellen möchten, sind folgende Voraussetzungen erforderlich:
-
-- **Python** 3.6 oder höher
-- Module:
-  - `tkinter`
-  - `pickle`
-  - `csv`
-  - `os`
-  - `re`
-
-Zusätzlich wird **PyInstaller** benötigt, um die EXE-Datei zu generieren:
-```bash
-pip install pyinstaller
-```
-Die EXE-Datei kann dann einfach mit dem folgenden Befehl generiert werden:
-´´´bash
-build_dashboard
-´´´
- 

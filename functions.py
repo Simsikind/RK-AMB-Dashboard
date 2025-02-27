@@ -31,6 +31,10 @@ class Patient:
         self.HSTt = HSTtime
         pass
 
+    def setHSTPlace(self, HSTp):
+        self.HSTPlace = HSTp
+        pass
+
     def setTransportOrg(self, TrOrg):
         self.TransportAgency = TrOrg
         pass
@@ -49,13 +53,14 @@ class Patient:
 
     def getInfos(self):
         print("Abrufen der Infos von Patient", self.Num)
-        return str(self.Num)+str(self.Alarmt)+str(self.Alarmstr)+str(self.BOt)+str(self.BOplace)+str(self.HSTt)+str(self.TransportAgency)+str(self.Endt)+str(self.finished)+tr(self.Naca)
+        return str(self.Num)+str(self.Alarmt)+str(self.Alarmstr)+str(self.BOt)+str(self.BOplace)+str(self.HSTt)+str(self.HSTPlace)+str(self.TransportAgency)+str(self.Endt)+str(self.finished)+tr(self.Naca)
 
     Alarmt = "-"
     Alarmstr = "-"
     BOt = "-"
     BOplace = "-"
     HSTt = "-"
+    HSTPlace = "Nicht zugeorndet"
     TransportAgency = "-"
     Endt = "-"
     finished = False
