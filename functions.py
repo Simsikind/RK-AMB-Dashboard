@@ -23,6 +23,10 @@ class Patient:
         self.BOt = BOtime
         pass
 
+    def setTriage(self, Tri):
+        self.Triage = Tri
+        pass
+
     def setBOplace(self, BOpl):
         self.BOplace = BOpl
         pass
@@ -51,17 +55,23 @@ class Patient:
         self.Naca = Naca
         pass
 
+    def setComment(self, Comment):
+        self.Comment = Comment
+        pass
+
     def getInfos(self):
         print("Abrufen der Infos von Patient", self.Num)
-        return str(self.Num)+str(self.Alarmt)+str(self.Alarmstr)+str(self.BOt)+str(self.BOplace)+str(self.HSTt)+str(self.HSTPlace)+str(self.TransportAgency)+str(self.Endt)+str(self.finished)+tr(self.Naca)
+        return str(self.Num)+str(self.Alarmt)+str(self.Alarmstr)+str(self.BOt)+str(self.BOplace)+str(self.HSTt)+str(self.HSTPlace)+str(self.TransportAgency)+str(self.Endt)+str(self.finished)+str(self.Naca)+str(self.Comment)
 
     Alarmt = "-"
     Alarmstr = "-"
     BOt = "-"
     BOplace = "-"
+    Triage = "-"
     HSTt = "-"
     HSTPlace = "Nicht zugeordnet"
     TransportAgency = "-"
     Endt = "-"
     finished = False
     Naca = int(0)
+    Comment = "-"
