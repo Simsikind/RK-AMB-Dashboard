@@ -1,6 +1,7 @@
 import tkinter.filedialog
 import functions
 from datetime import datetime
+import time
 import tkinter
 from tkinter import ttk
 import pickle
@@ -365,7 +366,9 @@ def SelectPlace_Window(index, l_SelectedPlace):
 
 # Function to create a new patient
 def NewPat():
+    read_list()
     global CurrentPatindex
+    write_list(Patlist)
     print("Neuer Patient mit Ablagenummer ", latestpatindex() + 1)
     Patlist.append(functions.Patient(latestpatindex() + 1))
     CurrentPatindex = latestpatindex()
@@ -810,7 +813,7 @@ b_DelBet.grid(column=0, row=0)
 #b_newPat.grid(column=0, row=0)
 l_Pat = tkinter.Label(patient_info_frame, text=str(latestpatindex()) + " Patienten")
 l_Pat.grid(column=1, row=0)
-b_newPat = tkinter.Button(patient_info_frame, text='Neuer Patient', command=lambda: (NewPat_Button()), bg="red")
+b_newPat = tkinter.Button(patient_info_frame, text='Neuer Patient', command=lambda: (Button_read_list(), NewPat_Button()), bg="red")
 b_newPat.grid(column=2, row=0)
 
 l_textr3 = tkinter.Label(patient_info_frame, text="Akuell Angezeigter Pat Nr:")
@@ -952,5 +955,30 @@ def on_closing():
     sys.exit()
 
 main_window.protocol("WM_DELETE_WINDOW", on_closing)
+
+# Function to check the file modification time
+def check_file_modification():
+    global Patlist
+    global last_modification_time
+    global CurrentPatindex
+    ambdat_filepath = "PatDat/" + re.sub('[^0-9]', '', AmbNum) + ".ambdat"
+    current_modification_time = os.path.getmtime(ambdat_filepath)
+    if current_modification_time != last_modification_time:
+        last_modification_time = current_modification_time
+
+        time.sleep(0.1)  # Wait for the file to be written
+        Patlist = read_list()
+        CurrentPatindex = 0
+        Update_lables()
+        Update_patient_list()
+        
+    main_window.after(10, check_file_modification)  # Check every 10 milliseconds (1 second)
+
+# Initialize the last modification time
+ambdat_filepath = "PatDat/" + re.sub('[^0-9]', '', AmbNum) + ".ambdat"
+last_modification_time = os.path.getmtime(ambdat_filepath)
+
+# Start checking the file modification time
+check_file_modification()
 
 main_window.mainloop()
