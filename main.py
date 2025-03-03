@@ -29,12 +29,23 @@ filepath = ""
 Betreuungen = 0
 CurrentPatindex = 0
 Patlist = []
-Patlist.append(functions.Patient(0))  # Add Patient zero, so that the Index is the same as the "Ablagenummer"
-Patlist[0].setfinished(True)
-Patlist[0].setAlarmt("-")
-Patlist[0].setHSTPlace("-")
-Patlist[0].setEndt(" - ")
-Patlist[0].setComment("Geisterpatient")
+
+def Pat0():
+    global Patlist
+    if Patlist:
+        if Patlist[0].Num == 0:
+            Patlist.pop(0)
+    Patlist.insert(0, functions.Patient(0))  # Add Patient zero, so that the Index is the same as the "Ablagenummer"
+    Patlist[0].setfinished(True)
+    Patlist[0].setAlarmt("-")
+    Patlist[0].setHSTPlace("-")
+    Patlist[0].setEndt(" - ")
+    Patlist[0].setComment("Geisterpatient")
+
+Pat0()
+
+main_window = tkinter.Tk(className='~Amulanz-Dashboard~')
+
 
 # Add Triage-Kategorie to the global variables
 TriageCategories = ["-","Rot - I", "Gelb - II", "Grün - III", "Blau - IV", "Schwarz (tot) - V"]
@@ -89,6 +100,26 @@ def latestpatindex():
 
 # Function to update the patient list in the scrollable frame
 def Update_patient_list():
+    global CurrentPatindex
+    global filter_active, filter_place, filter_transport
+    global sort_column, sort_order
+
+    def Patclick(idx):
+        global CurrentPatindex 
+        CurrentPatindex = idx 
+        Update_lables()
+        Edit_pat(idx)
+        return idx
+
+    def sort_patients(column):
+        global sort_column, sort_order
+        if sort_column == column:
+            sort_order = "desc" if sort_order == "asc" else "asc"
+        else:
+            sort_column = column
+            sort_order = "asc"
+        Update_patient_list()
+
     for widget in patient_list_frame.winfo_children():
         widget.destroy()
 
@@ -97,22 +128,36 @@ def Update_patient_list():
     legend_frame.grid(row=0, column=0, sticky="ew")
 
     legend_items = [
-        (" Nr    |", "white"),
-        (" NACA    |", "white"),
-        (" Beh    |", "white"),
-        (" Triage    |", "white"),
-        (" Status    |", "white"),
-        (" Kommentar", "white")
+        ("| Nr.", "Num"),
+        ("| BeH-Zeit", "HSTt"),
+        ("| BeH", "HSTPlace"),
+        ("| Si-Ka", "Triage"),
+        ("| Ber.G", "Alarmstr"),
+        ("& Kommentar", "Comment")
     ]
 
-    for text, color in legend_items:
-        legend_label = tkinter.Label(legend_frame, text=text, foreground="black", anchor="w")
+    for text, column in legend_items:
+        indicator = " ▲" if sort_column == column and sort_order == "asc" else " ▼" if sort_column == column and sort_order == "desc" else ""
+        legend_label = tkinter.Label(legend_frame, text=text + indicator, foreground="black", anchor="w")
         legend_label.pack(side="left", fill="x")
+        legend_label.bind("<Button-1>", lambda e, col=column: sort_patients(col))
 
     row_index = 1  # Start after the legend
-    for patient in Patlist:
+
+    sorted_patlist = sorted(Patlist, key=lambda p: getattr(p, sort_column), reverse=(sort_order == "desc"))
+
+    for patient in sorted_patlist:
         if patient.Num == 0:
             continue  # Skip patient 0
+
+        if filter_active and patient.Endt != "-":
+            continue  # Skip inactive patients if filter is active
+
+        if filter_place and patient.HSTPlace != filter_place:
+            continue  # Skip patients not in the selected place
+
+        if filter_transport and patient.TransportAgency != filter_transport:
+            continue  # Skip patients not in the selected transport agency
 
         color = "grey" if patient.Endt != "-" else {
             "Rot - I": "red",
@@ -123,20 +168,72 @@ def Update_patient_list():
         }.get(patient.Triage, "white")
 
         text_color = "white" if color in ["black", "blue"] else "black"
-        is_finished = "Ja" if patient.finished else "Nein"
         if patient.Endt != "-" and not patient.finished:
             text_color = "#990000"
         patient_num_formatted = f"{patient.Num:03}"  # Format number as 001, 002, etc.
-        patient_info = f"{patient_num_formatted} | {patient.Naca} | {patient.HSTPlace} | {patient.Triage} | {is_finished} | {patient.Comment}"
+        patient_info = f"{patient_num_formatted} | {patient.HSTt} | {patient.HSTPlace} | {patient.Triage} | {patient.Alarmstr}: {patient.Comment}"
         label = tkinter.Label(patient_list_frame, text=patient_info, background=color, foreground=text_color, anchor="w")
         label.grid(row=row_index, column=0, sticky="w")
-        label.bind("<Button-1>", lambda e, idx=patient.Num: Edit_pat(idx))
+        label.bind("<Button-1>", lambda e, idx=patient.Num: (Patclick(idx)))
         
         # Add a separator line
         separator = tkinter.Frame(patient_list_frame, height=1, bd=1, relief="sunken", background="black")
         separator.grid(row=row_index + 1, column=0, sticky="ew", pady=2)
         
         row_index += 2
+
+# Initialize sorting variables
+sort_column = "Num"
+sort_order = "asc"
+
+# Function to open the filter menu
+def open_filter_menu():
+    filter_window = tkinter.Toplevel(main_window)
+    filter_window.title("Filter Menü")
+
+    global filter_active, filter_place, filter_transport
+
+    filter_active_var = tkinter.BooleanVar(value=filter_active)
+    filter_place_var = tkinter.StringVar(value=filter_place)
+    filter_transport_var = tkinter.StringVar(value=filter_transport)
+
+    tkinter.Checkbutton(filter_window, text="Nur aktive Patienten anzeigen", variable=filter_active_var).grid(row=0, column=0, sticky="w")
+
+    tkinter.Label(filter_window, text="Behandlungsplatz:").grid(row=1, column=0, sticky="w")
+    place_options = [""] + list(max_counts.keys())
+    tkinter.OptionMenu(filter_window, filter_place_var, *place_options).grid(row=1, column=1, sticky="w")
+
+    tkinter.Label(filter_window, text="Abtransport:").grid(row=2, column=0, sticky="w")
+    transport_options = [""] + list(set(patient.TransportAgency for patient in Patlist if patient.TransportAgency))
+    tkinter.OptionMenu(filter_window, filter_transport_var, *transport_options).grid(row=2, column=1, sticky="w")
+
+    def apply_filters():
+        global filter_active, filter_place, filter_transport
+        filter_active = filter_active_var.get()
+        filter_place = filter_place_var.get()
+        filter_transport = filter_transport_var.get()
+        Update_patient_list()
+        filter_window.destroy()
+
+    def reset_filters():
+        global filter_active, filter_place, filter_transport
+        filter_active = False
+        filter_place = ""
+        filter_transport = ""
+        Update_patient_list()
+        filter_window.destroy()
+
+    tkinter.Button(filter_window, text="Anwenden", command=apply_filters).grid(row=3, column=0, sticky="w")
+    tkinter.Button(filter_window, text="Zurücksetzen", command=reset_filters).grid(row=3, column=1, sticky="w")
+
+# Initialize filter variables
+filter_active = False
+filter_place = ""
+filter_transport = ""
+
+# Add a button to open the filter menu
+b_open_filter_menu = tkinter.Button(main_window, text="Filter Menü öffnen", command=open_filter_menu)
+b_open_filter_menu.grid(row=0, column=50)
 
 # Function to update labels in the main window
 def Update_lables():
@@ -180,7 +277,15 @@ def Update_lables():
         current_count = sum(1 for patient in Patlist if patient.HSTPlace == place and patient.Endt == "-")
         percentage = (current_count / max_count) * 100
         text_color = "#880000" if percentage > 100 else "black"
-        usage_label = tkinter.Label(usage_frame, text=f"{place}: {percentage:.2f}%", fg=text_color)
+        
+        if percentage >= 80:
+            bg_color = "red"
+        elif percentage >= 50:
+            bg_color = "yellow"
+        else:
+            bg_color = "green"
+
+        usage_label = tkinter.Label(usage_frame, text=f"{place}: {percentage:.2f}%", fg=text_color, bg=bg_color)
         usage_label.grid(column=0, row=row)
 
         progress = ttk.Progressbar(usage_frame, length=200, mode='determinate')
@@ -250,8 +355,8 @@ def Edit_pat(index):
 
     l_textr11 = tkinter.Label(Edit, text="Abtransport-Organisation:")
     l_textr11.grid(column=0, row=11)
-    e_CurrentPatTransportAgency = tkinter.Entry(Edit)
-    e_CurrentPatTransportAgency.insert(0, str(Patlist[index].TransportAgency))
+    e_CurrentPatTransportAgency = ttk.Combobox(Edit, values=["-", "KTW", "NKTW", "RTW", "RTW+NEF/NAW", "Anderes"], state="readonly")
+    e_CurrentPatTransportAgency.set(Patlist[index].TransportAgency)
     e_CurrentPatTransportAgency.grid(column=1, row=11)
 
     l_textr12 = tkinter.Label(Edit, text="Einsatzende:")
@@ -297,6 +402,16 @@ def Edit_pat(index):
     b_now_endt = tkinter.Button(Edit, text="Jetzt", command=lambda: [e_CurrentPatEndt.delete(0, tkinter.END), e_CurrentPatEndt.insert(0, now())])
     b_now_endt.grid(column=2, row=12)
 
+    def update_finished_state(*args):
+        if e_CurrentPatHSTt.get() != "-" and l_SelectedPlace.cget("text") != "-" and e_CurrentPatEndt.get() != "-":
+            c_CurrentPatfin.config(state=tkinter.NORMAL)
+        else:
+            c_CurrentPatfin.config(state=tkinter.DISABLED)
+
+    e_CurrentPatHSTt.bind("<KeyRelease>", update_finished_state)
+    e_CurrentPatEndt.bind("<KeyRelease>", update_finished_state)
+    l_SelectedPlace.bind("<Configure>", update_finished_state)
+
     b_OK = tkinter.Button(Edit, text="OK", command=lambda: [
         Patlist[index].setAlarmt(e_CurrentPatAlarmt.get()),
         Patlist[index].setAlarmstr(e_CurrentPatAlarmstr.get()),
@@ -321,18 +436,20 @@ def Edit_pat(index):
     def delete_patient():
         global CurrentPatindex
         if CurrentPatindex == latestpatindex():
-            (CurrentPatindex := CurrentPatindex - 1) 
+            CurrentPatindex -= 1
         Patlist.pop(index)
         [patient.setNum(Patlist.index(patient)) for patient in Patlist]
         write_list(Patlist)
         Update_lables()
 
     b_Cancel = tkinter.Button(Edit, text="Abbruch", command=Edit.destroy)
-    b_Delete = tkinter.Button(Edit, text="Patient löschen", command=lambda: [delete_patient_ask(),Edit.destroy()], bg="red")
+    b_Delete = tkinter.Button(Edit, text="Patient löschen", command=lambda: [delete_patient_ask(), Edit.destroy()], bg="red")
 
     b_OK.grid(row=16, column=2)
     b_Cancel.grid(row=16, column=1)
     b_Delete.grid(row=16, column=0)
+
+    update_finished_state()
 
 # Function to select a place for the patient
 def SelectPlace_Window(index, l_SelectedPlace):
@@ -368,9 +485,10 @@ def SelectPlace_Window(index, l_SelectedPlace):
 def NewPat():
     read_list()
     global CurrentPatindex
-    write_list(Patlist)
+    global Patlist
     print("Neuer Patient mit Ablagenummer ", latestpatindex() + 1)
     Patlist.append(functions.Patient(latestpatindex() + 1))
+    write_list(Patlist)
     CurrentPatindex = latestpatindex()
     Edit_pat(CurrentPatindex)
 
@@ -514,25 +632,50 @@ def write_list(list):
     global AmbName
     global AmbDate
     global AmbNum
+
     filepath = "PatDat/" + re.sub('[^0-9]', '', AmbNum) + ".ambdat"
+
+    if not os.path.exists(filepath):
+        with open(filepath, 'w+') as file:
+            pickle.dump(Patlist, file)
+    else:
+        print("Die Datei {file_path} existiert schon.")
+        
+
     with open(filepath, "wb") as fp:
         pickle.dump(list, fp)
         print(f"Daten in Datei geschrieben: {filepath}")
+        fp.close()
 
 def read_list():
     global AmbName
     global AmbDate
     filepath = "PatDat/" + re.sub('[^0-9]', '', AmbNum) + ".ambdat"
+
+    if not os.path.exists(filepath):
+        with open(filepath, 'w+') as file:
+            pickle.dump("", file)
+            file.close()
+    else:
+        print("Die Datei existiert schon.")
+
+    if os.path.getsize(filepath) <= 0:
+        Pat0()
+        fil = open(filepath, 'wb+')
+        pickle.dump(Patlist, fil)
+        fil.close()
+
     with open(filepath, "rb") as fp:
         mydata = pickle.load(fp)
         print(f"Daten aus Datei gelesen: {filepath}")
+        fp.close
         return mydata
 
 def Button_read_list():
     global Patlist
     global CurrentPatindex
     Patlist = read_list()
-    CurrentPatindex = 0
+    #CurrentPatindex = 0
     Update_lables()
 
 def ExportPatlist():
@@ -762,8 +905,6 @@ def CreateRandomPatients(x):
         CurrentPatindex =+ 1
     Update_lables()
 
-main_window = tkinter.Tk(className='~Amulanz-Dashboard~')
-
 
 # Create a scrollable frame for the patient list
 patient_list_canvas = tkinter.Canvas(main_window)
@@ -772,7 +913,7 @@ scrollbar = tkinter.Scrollbar(main_window, orient="vertical", command=patient_li
 patient_list_canvas.configure(yscrollcommand=scrollbar.set)
 
 scrollbar.grid(row=0, column=3, rowspan=21, sticky="ns")
-patient_list_canvas.grid(row=0, column=4, rowspan=21, sticky="nsew")
+patient_list_canvas.grid(row=0, column=4, rowspan=21, columnspan=20, sticky="nsew")
 patient_list_canvas.create_window((0, 0), window=patient_list_frame, anchor="nw")
 
 def on_frame_configure(canvas):
@@ -841,40 +982,40 @@ l_textr7.grid(column=0, row=5)
 l_CurrentPatBot = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].BOt))
 l_CurrentPatBot.grid(column=1, row=5)
 
+l_textr14 = tkinter.Label(patient_info_frame, text="Triage-Kategorie:")
+l_textr14.grid(column=0, row=6)
+l_CurrentPatTriage = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].Triage))
+l_CurrentPatTriage.grid(column=1, row=6)
+
 l_textr8 = tkinter.Label(patient_info_frame, text="Zeit auf der Behandlung:")
-l_textr8.grid(column=0, row=6)
+l_textr8.grid(column=0, row=7)
 l_CurrentPatHSTt = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].HSTt))
-l_CurrentPatHSTt.grid(column=1, row=6)
+l_CurrentPatHSTt.grid(column=1, row=7)
 
 l_textr9 = tkinter.Label(patient_info_frame, text="Behandlungsplatz:")
-l_textr9.grid(column=0, row=7)
+l_textr9.grid(column=0, row=8)
 l_CurrentPatHSTplace = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].HSTPlace))
-l_CurrentPatHSTplace.grid(column=1, row=7)
+l_CurrentPatHSTplace.grid(column=1, row=8)
 
 l_textr10 = tkinter.Label(patient_info_frame, text="Abtransport")
-l_textr10.grid(column=0, row=8)
+l_textr10.grid(column=0, row=9)
 l_CurrentPatTransA = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].TransportAgency))
-l_CurrentPatTransA.grid(column=1, row=8)
+l_CurrentPatTransA.grid(column=1, row=9)
 
 l_textr11 = tkinter.Label(patient_info_frame, text="Einsatzende:")
-l_textr11.grid(column=0, row=9)
+l_textr11.grid(column=0, row=10)
 l_CurrentPatEndt = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].Endt))
-l_CurrentPatEndt.grid(column=1, row=9)
+l_CurrentPatEndt.grid(column=1, row=10)
 
 l_textr12 = tkinter.Label(patient_info_frame, text="Protokoll fertig:")
-l_textr12.grid(column=0, row=10)
+l_textr12.grid(column=0, row=11)
 l_CurrentPatfin = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].finished))
-l_CurrentPatfin.grid(column=1, row=10)
+l_CurrentPatfin.grid(column=1, row=11)
 
 l_textr13 = tkinter.Label(patient_info_frame, text="NACA:")
-l_textr13.grid(column=0, row=11)
+l_textr13.grid(column=0, row=12)
 l_CurrentPatNACA = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].Naca))
-l_CurrentPatNACA.grid(column=1, row=11)
-
-l_textr14 = tkinter.Label(patient_info_frame, text="Triage-Kategorie:")
-l_textr14.grid(column=0, row=12)
-l_CurrentPatTriage = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].Triage))
-l_CurrentPatTriage.grid(column=1, row=12)
+l_CurrentPatNACA.grid(column=1, row=12)
 
 l_textr15 = tkinter.Label(patient_info_frame, text="Kommentar:")
 l_textr15.grid(column=0, row=13)
@@ -968,7 +1109,7 @@ def check_file_modification():
 
         time.sleep(0.1)  # Wait for the file to be written
         Patlist = read_list()
-        CurrentPatindex = 0
+        #CurrentPatindex = 0
         Update_lables()
         Update_patient_list()
         
