@@ -29,6 +29,7 @@ filepath = ""
 Betreuungen = 0
 CurrentPatindex = 0
 Patlist = []
+lastUpdate = now()
 
 def Pat0():
     global Patlist
@@ -105,10 +106,14 @@ def Update_patient_list():
     global sort_column, sort_order
 
     def Patclick(idx):
-        global CurrentPatindex 
-        CurrentPatindex = idx 
-        Update_lables()
-        Edit_pat(idx)
+        global CurrentPatindex
+        if idx == CurrentPatindex:
+            CurrentPatindex = idx 
+            Update_lables()
+            Edit_pat(idx)
+        else: 
+            CurrentPatindex = idx 
+            Update_lables()
         return idx
 
     def sort_patients(column):
@@ -190,6 +195,7 @@ sort_order = "asc"
 def open_filter_menu():
     filter_window = tkinter.Toplevel(main_window)
     filter_window.title("Filter Menü")
+    filter_window.focus_force()
 
     global filter_active, filter_place, filter_transport
 
@@ -237,6 +243,11 @@ b_open_filter_menu.grid(row=0, column=50)
 
 # Function to update labels in the main window
 def Update_lables():
+    global lastUpdate
+    global Betreuungen
+    global Patlist
+    global CurrentPatindex
+
     # Clear existing labels to avoid artifacts
     for widget in main_window.grid_slaves():
         if int(widget.grid_info()["row"]) >= 19:
@@ -296,6 +307,7 @@ def Update_lables():
 
     main_window.title(AmbName + (" - Dashboard"))
     Update_patient_list()
+    lastUpdate = now()
 
 # Function to edit patient details
 def Edit_pat(index):
@@ -305,6 +317,7 @@ def Edit_pat(index):
     Done = tkinter.BooleanVar()
     Edit = tkinter.Toplevel(main_window)
     Edit.title("Patient " + str(index) + " bearbeiten")
+    Edit.focus_force()
 
     l_textr3 = tkinter.Label(Edit, text="Akuell Angezeigter Pat Nr: ")
     l_textr3.grid(column=0, row=3)
@@ -455,6 +468,7 @@ def Edit_pat(index):
 def SelectPlace_Window(index, l_SelectedPlace):
     SelectPlace = tkinter.Toplevel(main_window)
     SelectPlace.title("Behandlungsplatz auswählen")
+    SelectPlace.focus_force()
 
     l_Ausl = tkinter.Label(SelectPlace, text="Auslastung:")
     l_Ausl.grid(column=0, row=0)
@@ -496,6 +510,7 @@ def NewPat():
 def NewPat_Button():
     top = tkinter.Toplevel(main_window)
     top.title("Neuer Patient")
+    top.focus_force()
     l_newPatinfo = tkinter.Label(top, text="Neuer Patient mit der Ablagenummer " + str(latestpatindex() + 1))
     l_newPatinfo.pack()
 
@@ -545,6 +560,7 @@ def DelBetreuung_Button():
 def Init_Stats():
     Init = tkinter.Toplevel(main_window)
     Init.title("Ambulanzdaten eingeben")
+    Init.focus_force()
 
     l_textr4 = tkinter.Label(Init, text="Ambulanznummer:")
     l_textr4.grid(column=0, row=0)
@@ -763,6 +779,7 @@ def Button_saveDat():
 def Patstats():
     stats = tkinter.Toplevel(main_window)
     stats.title("Statistik")
+    stats.focus_force()
 
     naca_counts = {1: {}, 2: {}, 3: {}, 4: {}, 5: {}, 6: {}, 7: {}}
     for patient in Patlist:
@@ -798,6 +815,7 @@ def DisplayPatientsInPlace():
 
     place_window = tkinter.Toplevel(main_window)
     place_window.title("Patienten in Behandlungsplätzen")
+    place_window.focus_force()
 
     row = 0
     for place, count in place_counts.items():
@@ -828,8 +846,11 @@ def DisplayPatientsInPlace():
         
 
 def DetailedStats():
+    global Betreuungen
+
     stats = tkinter.Toplevel(main_window)
     stats.title("Detaillierte Statistik")
+    stats.focus_force()
 
     naca_counts = {1: {}, 2: {}, 3: {}, 4: {}, 5: {}, 6: {}, 7: {}}
     all_places = set()
@@ -855,29 +876,56 @@ def DetailedStats():
         naca_label.grid(column=col, row=0, sticky="w")
         col += 1
 
+    # Add a header for the sum column
+    sum_header_label = tkinter.Label(stats, text="Summe", anchor="w")
+    sum_header_label.grid(column=col, row=0, sticky="w")
+
     # Create rows for each place
     row = 1
     for place in sorted_places:
         place_label = tkinter.Label(stats, text=str(place + ":"), anchor="w")
         place_label.grid(column=0, row=row, sticky="w")
         col = 1
+        place_sum = 0
         for naca in range(1, 8):
             count = naca_counts[naca].get(place, 0)
+            place_sum += count
             count_label = tkinter.Label(stats, text=str(count), anchor="w")
             count_label.grid(column=col, row=row, sticky="w")
             col += 1
+        # Add the sum for the place
+        place_sum_label = tkinter.Label(stats, text=str(place_sum), anchor="w")
+        place_sum_label.grid(column=col, row=row, sticky="w")
         row += 1
+
+        # Add a thin line separator between places
+        separator = tkinter.Frame(stats, height=1, bd=1, relief="sunken", background="black")
+        separator.grid(column=0, row=row, columnspan=col+1, sticky="ew", pady=2)
+        row += 1
+
+    # Add a thick line separator above the sum row
+    thick_separator = tkinter.Frame(stats, height=2, bd=1, relief="sunken", background="black")
+    thick_separator.grid(column=0, row=row, columnspan=col+1, sticky="ew", pady=5)
+    row += 1
 
     # Add a last row for the sum
     sum_label = tkinter.Label(stats, text="Summe:", anchor="w")
     sum_label.grid(column=0, row=row, sticky="w")
     col = 1
     total_counts = {naca: sum(naca_counts[naca].values()) for naca in range(1, 8)}
+    total_sum = sum(total_counts.values())
     for naca in range(1, 8):
         total_count = total_counts[naca]
         total_label = tkinter.Label(stats, text=str(total_count), anchor="w")
         total_label.grid(column=col, row=row, sticky="w")
         col += 1
+    # Add the total sum
+    total_sum_label = tkinter.Label(stats, text=str(total_sum), anchor="w")
+    total_sum_label.grid(column=col, row=row, sticky="w")
+
+    # Add a label for Betreuungen
+    betreuungen_label = tkinter.Label(stats, text=f"Betreuungen: {Betreuungen}", anchor="w")
+    betreuungen_label.grid(column=0, row=row+1, sticky="w")
 
     # Create pie charts
     def create_pie_chart(data, title, row, col):
@@ -892,7 +940,7 @@ def DetailedStats():
         canvas.draw()
         canvas.get_tk_widget().grid(column=col, row=row, padx=10, pady=10)
         
-    create_pie_chart(total_counts, "Summe", row+1, 10)
+    create_pie_chart(total_counts, "Summe", row+2, 10)
 
 # Function to create x patients with random Triage Categories
 def CreateRandomPatients(x):
@@ -1031,18 +1079,19 @@ b_nextPat.grid(row=14, column=2)
 b_EditPat = tkinter.Button(patient_info_frame, width=20, text="Pat Bearbeiten", command=lambda: (Edit_pat(CurrentPatindex)))
 b_EditPat.grid(row=14, column=1)
 
-l_AmbNum = tkinter.Label(ambulance_info_frame, text=AmbNum)
+l_AmbNum = tkinter.Label(ambulance_info_frame, text=AmbNum, font=("Helvetica", 12, "bold"))
 l_AmbNum.grid(row=0, column=0)
 
-l_AmbName = tkinter.Label(ambulance_info_frame, text=AmbName)
+l_AmbName = tkinter.Label(ambulance_info_frame, text=AmbName, font=("Helvetica", 12, "bold"))
 l_AmbName.grid(row=1, column=0)
 
-l_AmbDate = tkinter.Label(ambulance_info_frame, text=AmbDate)
+l_AmbDate = tkinter.Label(ambulance_info_frame, text=AmbDate, font=("Helvetica", 12, "bold"))
 l_AmbDate.grid(row=2, column=0)
 
 def open_menu_window():
     menu_window = tkinter.Toplevel(main_window)
     menu_window.title("Menü")
+    menu_window.focus_force()
 
     b_init = tkinter.Button(menu_window, text="Daten konfigurieren", command=lambda:[Init_Stats(), menu_window.destroy()])
     b_init.grid(row=0, column=0)
@@ -1068,6 +1117,9 @@ def open_menu_window():
     b_stats = tkinter.Button(menu_window, text="Statistik anzeigen", command=lambda:[DetailedStats(), menu_window.destroy()])
     b_stats.grid(row=0, column=1)
 
+    l_Update = tkinter.Label(menu_window, text="Letztes Update: " + lastUpdate)
+    l_Update.grid(column=0, row=5)
+
     #b_create_random_patients = tkinter.Button(menu_window, text="Erstelle zufällige Patienten", command=lambda: [CreateRandomPatients(10), menu_window.destroy()])
     #b_create_random_patients.grid(row=4, column=0)
 
@@ -1089,7 +1141,7 @@ def on_closing():
     print("Anzahl der Betreuungen:", Betreuungen)
     print("\n")
     print("Vielen Dank für die Nutzung von Ambulanz-Dashboard")
-    print("Version: 1.1.0")
+    print("Version: 1.1.2")
     print("Entwickler: Simon")
     print("Besuchen Sie meine Website für mehr Informationen.")
     print("Programm beendet")
