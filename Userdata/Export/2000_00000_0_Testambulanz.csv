@@ -1,15 +1,21 @@
-Pat-Nr;Alarmzeit;B.Grund;BO;BO-Zeit;HST-Zeit;Triage-Kat;Behandlungsstelle;Abtransport;NACA;Fertig;Kommentar;4 Betreuungen
-1;10:00;Schiefer;Nottendorfergasse 21;10:15;10:30;GrÃ¼n - III;A;-;1;Ja;Schiefer durch Mutter entfernt
-2;11:00;Kopfweh;Spallartgasse 10a;11:15;11:30;GrÃ¼n - III;B;KTW;2;Ja;RR:180sys
-3;12:00;GestÃ¼rzt. Schmerzen HÃ¼fte;Karl-SchÃ¤fer-StraÃŸe 8;12:15;12:30;Gelb - II;B;NKTW;3;Ja;Schenkelhalsfract.
-4;13:00;v.A. Stroke;Negerlegasse 4;13:15;13:30;Gelb - II;B;RTW;4;Ja;Arm fÃ¤llt, Mundwinkel hÃ¤ngt
-5;14:00;ACS;Wiedner HauptstraÃŸe 32;14:15;14:30;Gelb - II;B;RTW+NEF;5;Ja;STEMI
-6;15:00;Kollabiert, B-los;Oberlaaer StraÃŸe 306;15:15;15:30;Rot - I;C (Intensiv);Anderes;6;Ja;CPR:15:16, ROSC 15:34
+Pat-Nr;Alarmzeit;B.Grund;BO;BO-Zeit;HST-Zeit;Sichtungs-Kat;Behandlungsstelle;Abtransport;NACA;Fertig;Kommentar;10 Betreuungen
+1;10:00;Schiefer;Nottendorfergasse 21;10:15;10:30;Grün - III;A;-;1;Ja;Schiefer durch Mutter entfernt
+2;11:00;Kopfweh;Spallartgasse 10a;11:15;11:30;Grün - III;B;KTW;2;Ja;RR:180sys
+3;12:00;Gestürzt. Schmerzen Hüfte;Karl-Schäfer-Straße 8;12:15;12:30;Gelb - II;B;NKTW;3;Ja;Schenkelhalsfract.
+4;13:00;v.A. Stroke;Negerlegasse 4;13:15;13:30;Gelb - II;B;RTW;4;Ja;Arm fällt, Mundwinkel hängt
+5;14:00;ACS;Wiedner Hauptstraße 32;14:15;14:30;Gelb - II;B;RTW+NEF;5;Ja;STEMI
+6;15:00;Kollabiert, B-los;Oberlaaer Straße 306;15:15;15:30;Rot - I;C (Intensiv);RTW+NEF/NAW;6;Ja;CPR:15:16, ROSC 15:34
 7;16:00;Atmet nicht;Safargasse 4;16:15;16:30;Schwarz (tot) - V;B;Anderes;7;Ja;Leichenstarre
-8;01:22;Kopsturz, Ãœbelkeit;Rathausplatz;01:25;01:30;GrÃ¼n - III;A;KTW;2;Nein;V.a. SHT
+8;01:22;Kopsturz, Übelkeit;Rathausplatz;01:25;01:30;Grün - III;A;KTW;2;Nein;V.a. SHT
 9;01:24;Alkintox;Stand 55 ChKm;01:27;01:34;Gelb - II;A;RTW;4;Nein;auf Schmerzreiz weckbar
-10;01:26;Armverletzung;kommt selbst;01:26;01:26;GrÃ¼n - III;B;KTW;0;Nein;Armfrac
-11;01:30;Drogenintox;Lichtenfelsgasse;01:32;01:38;Rot - I;C (Intensiv);RTW+NEF;0;Nein;Heroin, GCS3
-12;01:40;Oberschenkelfract.;Eistraum;01:45;-;-;KTG;-;0;Nein;-
-13;01:43;Unterarmfract.;Eistraum Otto;-;-;-;TRP;KTW;0;Nein;-
-14;21:29;-;-;-;-;-;Nicht zugeordnet;-;0;Nein;-
+10;01:26;Armverletzung;kommt selbst;01:26;01:26;Grün - III;B;KTW;2;Ja;Armfrac
+11;01:30;Drogenintox;Lichtenfelsgasse;01:32;01:38;Rot - I;C (Intensiv);RTW+NEF;5;Ja;Heroin, GCS3
+12;01:40;Oberschenkelfract.;Eistraum;01:45;01:50;Gelb - II;B;RTW;3;Ja;Offene OS-Fractur & Keta
+13;01:43;Unterarmfract.;Eistraum Otto;-;01:55;Grün - III;B;KTW;2;Ja;Radiusfractur
+14;23:14;laufende CPR;Ernst-Happel-Stadion;21:26;21:30;Rot - I;C (Intensiv);RTW+NEF/NAW;6;Ja;-
+15;23:19;Schwindel;kommt selbst;23:19;23:19;Grün - III;B;KTW;1;Ja;zu wening getrunken
+16;16:48;Papa Kaputt;ZuHause;16:48;16:48;Rot - I;C (Intensiv);RTW;3;Ja;Tief Bewusstseinsgetrübt
+17;17:25;Asthma Anfall;Bahnhof Meidling;17:30;17:50;Gelb - II;B;RTW;3;Ja;init. Spo 86%
+18;17:45;Übelkeit;Arena Wien;18:12;18:30;Grün - III;A;KTW;1;Nein;Nach übermäßigem C2
+19;18:13;Treppensturz;Arbeitsplatz;18:30;-;-;KTG;-;0;Nein;Beckenfracktur st.p. Sturz
+20;19:21;Übelkeit bei Infekt;Arztpraxis Mustermann;19:35;-;-;TRP;-;0;Nein;Magen Darm Grippe

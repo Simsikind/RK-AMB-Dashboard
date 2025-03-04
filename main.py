@@ -820,7 +820,7 @@ def Button_read_list():
 
 def ExportPatlist():
     path = 'Userdata/Export/' + re.sub(r'\W+', '_', AmbNum) + "_" + AmbName + '.csv'
-    with open(path, 'w', newline='', encoding='utf-8') as csvfile:
+    with open(path, 'w', newline='', encoding='ansi') as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         spamwriter.writerow(["Pat-Nr", "Alarmzeit", "B.Grund", "BO", "BO-Zeit", "HST-Zeit", "Sichtungs-Kat", "Behandlungsstelle", "Abtransport", "NACA", "Fertig", "Kommentar", str(Betreuungen) + " Betreuungen"])
         for x in range(len(Patlist)):
