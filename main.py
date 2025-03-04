@@ -1,5 +1,4 @@
 import tkinter.filedialog
-import functions
 from datetime import datetime
 import time
 import tkinter
@@ -13,6 +12,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import random
 import sys
 
+import functions
+import shortcuts
+
 print("Starte Ambulanz-Dashboard")
 
 # Function to get the current time
@@ -21,6 +23,9 @@ def now():
     return str(currentTime.strftime("%H:%M"))
 
 # Global variables
+
+Version = "1.3.0"
+
 AmbNum = "Ambulanznummer (bitte setzten)"
 AmbName = "Ambulanzname (bitte setzten)"
 AmbDate = "Datum (bitte setzten)"
@@ -43,10 +48,57 @@ def Pat0():
     Patlist[0].setEndt(" - ")
     Patlist[0].setComment("Geisterpatient")
 
-Pat0()
-
 main_window = tkinter.Tk(className='~Amulanz-Dashboard~')
 
+Pat0()
+
+# Function to toggle fullscreen mode
+def toggle_fullscreen(event=None):
+    is_fullscreen = main_window.attributes("-fullscreen")
+    main_window.attributes("-fullscreen", not is_fullscreen)
+
+# Function to prompt user for patient number and open Edit_pat
+def prompt_edit_patient(event=None):
+    def on_submit(event=None):
+        global CurrentPatindex
+        try:
+            patient_num = int(entry.get())
+            if 0 <= patient_num <= latestpatindex():
+                CurrentPatindex = patient_num
+                Update_lables()
+                prompt_window.destroy()
+            else:
+                error_label.config(text="Ungültige Patientennummer.")
+        except ValueError:
+            error_label.config(text="Bitte eine gültige Nummer eingeben.")
+
+    def on_cancel(event=None):
+        prompt_window.destroy()
+
+    prompt_window = tkinter.Toplevel(main_window)
+    prompt_window.title("Lade Patient")
+    prompt_window.focus_force()
+
+    label = tkinter.Label(prompt_window, text="Bitte geben Sie eine Patientennummer ein:")
+    label.pack(pady=5)
+
+    entry = tkinter.Entry(prompt_window)
+    entry.pack(pady=5)
+    entry.focus()
+    entry.bind(shortcuts.Confirm, on_submit)
+    entry.bind(shortcuts.Cancel, on_cancel)
+
+    button_frame = tkinter.Frame(prompt_window)
+    button_frame.pack(pady=5)
+
+    submit_button = tkinter.Button(button_frame, text="OK", command=on_submit)
+    submit_button.pack(side="left", padx=5)
+
+    cancel_button = tkinter.Button(button_frame, text="Abbrechen", command=on_cancel)
+    cancel_button.pack(side="left", padx=5)
+
+    error_label = tkinter.Label(prompt_window, text="", fg="red")
+    error_label.pack(pady=5)
 
 # Add Triage-Kategorie to the global variables
 TriageCategories = ["-","Rot - I", "Gelb - II", "Grün - III", "Blau - IV", "Schwarz (tot) - V"]
@@ -137,6 +189,8 @@ def Update_patient_list():
         ("| BeH-Zeit", "HSTt"),
         ("| BeH", "HSTPlace"),
         ("| Si-Ka", "Triage"),
+        ("| Abtrans.", "TransportAgency"),
+        ("| NACA", "Naca"),
         ("| Ber.G", "Alarmstr"),
         ("& Kommentar", "Comment")
     ]
@@ -176,7 +230,7 @@ def Update_patient_list():
         if patient.Endt != "-" and not patient.finished:
             text_color = "#990000"
         patient_num_formatted = f"{patient.Num:03}"  # Format number as 001, 002, etc.
-        patient_info = f"{patient_num_formatted} | {patient.HSTt} | {patient.HSTPlace} | {patient.Triage} | {patient.Alarmstr}: {patient.Comment}"
+        patient_info = f"{patient_num_formatted} | {patient.HSTt} | {patient.HSTPlace} | {patient.Triage} | {patient.TransportAgency} | {patient.Naca} | {patient.Alarmstr}: {patient.Comment}"
         label = tkinter.Label(patient_list_frame, text=patient_info, background=color, foreground=text_color, anchor="w")
         label.grid(row=row_index, column=0, sticky="w")
         label.bind("<Button-1>", lambda e, idx=patient.Num: (Patclick(idx)))
@@ -207,13 +261,13 @@ def open_filter_menu():
 
     tkinter.Label(filter_window, text="Behandlungsplatz:").grid(row=1, column=0, sticky="w")
     place_options = [""] + list(max_counts.keys())
-    tkinter.OptionMenu(filter_window, filter_place_var, *place_options).grid(row=1, column=1, sticky="w")
+    ttk.Combobox(filter_window, textvariable=filter_place_var, values=place_options, state="readonly").grid(row=1, column=1, sticky="w")
 
     tkinter.Label(filter_window, text="Abtransport:").grid(row=2, column=0, sticky="w")
     transport_options = [""] + list(set(patient.TransportAgency for patient in Patlist if patient.TransportAgency))
-    tkinter.OptionMenu(filter_window, filter_transport_var, *transport_options).grid(row=2, column=1, sticky="w")
+    ttk.Combobox(filter_window, textvariable=filter_transport_var, values=transport_options, state="readonly").grid(row=2, column=1, sticky="w")
 
-    def apply_filters():
+    def apply_filters(event=None):
         global filter_active, filter_place, filter_transport
         filter_active = filter_active_var.get()
         filter_place = filter_place_var.get()
@@ -221,7 +275,7 @@ def open_filter_menu():
         Update_patient_list()
         filter_window.destroy()
 
-    def reset_filters():
+    def reset_filters(event=None):
         global filter_active, filter_place, filter_transport
         filter_active = False
         filter_place = ""
@@ -231,6 +285,12 @@ def open_filter_menu():
 
     tkinter.Button(filter_window, text="Anwenden", command=apply_filters).grid(row=3, column=0, sticky="w")
     tkinter.Button(filter_window, text="Zurücksetzen", command=reset_filters).grid(row=3, column=1, sticky="w")
+
+    filter_window.bind(shortcuts.Confirm, apply_filters)
+    filter_window.bind(shortcuts.Reset, reset_filters)
+
+    filter_window.bind(shortcuts.Cancel, lambda event: filter_window.destroy())
+    filter_window.bind(shortcuts.OnlyActive, lambda event: filter_active_var.set(not filter_active_var.get()))
 
 # Initialize filter variables
 filter_active = False
@@ -320,100 +380,101 @@ def Edit_pat(index):
     Edit.focus_force()
 
     l_textr3 = tkinter.Label(Edit, text="Akuell Angezeigter Pat Nr: ")
-    l_textr3.grid(column=0, row=3)
+    l_textr3.grid(column=0, row=0)
     l_CurrentPatNum = tkinter.Label(Edit, text=str(Patlist[index].Num))
-    l_CurrentPatNum.grid(column=1, row=3)
+    l_CurrentPatNum.grid(column=1, row=0)
     
     l_textr4 = tkinter.Label(Edit, text="Einsatzbeginn:")
-    l_textr4.grid(column=0, row=4)
+    l_textr4.grid(column=0, row=1)
     e_CurrentPatAlarmt = tkinter.Entry(Edit)
     e_CurrentPatAlarmt.insert(0, str(Patlist[index].Alarmt))
-    e_CurrentPatAlarmt.grid(column=1, row=4)
+    e_CurrentPatAlarmt.grid(column=1, row=1)
     Patlist[index].setAlarmt(e_CurrentPatAlarmt.get())
 
+    b_now_alarmt = tkinter.Button(Edit, text="Jetzt", command=lambda: [e_CurrentPatAlarmt.delete(0, tkinter.END), e_CurrentPatAlarmt.insert(0, now())])
+    b_now_alarmt.grid(column=2, row=1)
+
     l_textr5 = tkinter.Label(Edit, text="Berufungsgrund:")
-    l_textr5.grid(column=0, row=5)
+    l_textr5.grid(column=0, row=2)
     e_CurrentPatAlarmstr = tkinter.Entry(Edit)
     e_CurrentPatAlarmstr.insert(0, str(Patlist[index].Alarmstr))
-    e_CurrentPatAlarmstr.grid(column=1, row=5)
+    e_CurrentPatAlarmstr.grid(column=1, row=2)
 
     l_textr6 = tkinter.Label(Edit, text="Berufungsort:")
-    l_textr6.grid(column=0, row=6)
+    l_textr6.grid(column=0, row=3)
     e_CurrentPatBO = tkinter.Entry(Edit)
     e_CurrentPatBO.insert(0, str(Patlist[index].BOplace))
-    e_CurrentPatBO.grid(column=1, row=6)
+    e_CurrentPatBO.grid(column=1, row=3)
 
     l_textr7 = tkinter.Label(Edit, text="Zeit am BO: ")
-    l_textr7.grid(column=0, row=7)
+    l_textr7.grid(column=0, row=4)
     e_CurrentPatBot = tkinter.Entry(Edit)
     e_CurrentPatBot.insert(0, str(Patlist[index].BOt))
-    e_CurrentPatBot.grid(column=1, row=7)
+    e_CurrentPatBot.grid(column=1, row=4)
+
+    b_now_bot = tkinter.Button(Edit, text="Jetzt", command=lambda: [e_CurrentPatBot.delete(0, tkinter.END), e_CurrentPatBot.insert(0, now())])
+    b_now_bot.grid(column=2, row=4)
+
+    l_textr8 = tkinter.Label(Edit, text="Sichtungs-Kategorie:")
+    l_textr8.grid(column=0, row=5)
+    e_CurrentPatTriage = ttk.Combobox(Edit, values=TriageCategories, state="readonly")
+    e_CurrentPatTriage.set(Patlist[index].Triage)
+    e_CurrentPatTriage.grid(column=1, row=5)
 
     l_textr9 = tkinter.Label(Edit, text="Zeit auf der Behandlung:")
-    l_textr9.grid(column=0, row=9)
+    l_textr9.grid(column=0, row=6)
     e_CurrentPatHSTt = tkinter.Entry(Edit)
     e_CurrentPatHSTt.insert(0, str(Patlist[index].HSTt))
-    e_CurrentPatHSTt.grid(column=1, row=9)
+    e_CurrentPatHSTt.grid(column=1, row=6)
+
+    b_now_hstt = tkinter.Button(Edit, text="Jetzt", command=lambda: [e_CurrentPatHSTt.delete(0, tkinter.END), e_CurrentPatHSTt.insert(0, now())])
+    b_now_hstt.grid(column=2, row=6)
 
     l_textr10 = tkinter.Label(Edit, text="Behandlungsplatz:")
-    l_textr10.grid(column=0, row=10)
+    l_textr10.grid(column=0, row=7)
     l_SelectedPlace = tkinter.Label(Edit, text=str(Patlist[index].HSTPlace))
-    l_SelectedPlace.grid(column=1, row=10)
+    l_SelectedPlace.grid(column=1, row=7)
     b_SelectPlace = tkinter.Button(Edit, text="Platz auswählen", command=lambda: SelectPlace_Window(index, l_SelectedPlace))
-    b_SelectPlace.grid(column=2, row=10)
+    b_SelectPlace.grid(column=2, row=7)
 
     # Disable the button if only one Behandlungsplatz is configured
     if len(max_counts) <= 1:
         b_SelectPlace.config(state=tkinter.DISABLED)
 
     l_textr11 = tkinter.Label(Edit, text="Abtransport-Organisation:")
-    l_textr11.grid(column=0, row=11)
+    l_textr11.grid(column=0, row=8)
     e_CurrentPatTransportAgency = ttk.Combobox(Edit, values=["-", "KTW", "NKTW", "RTW", "RTW+NEF/NAW", "Anderes"], state="readonly")
     e_CurrentPatTransportAgency.set(Patlist[index].TransportAgency)
-    e_CurrentPatTransportAgency.grid(column=1, row=11)
+    e_CurrentPatTransportAgency.grid(column=1, row=8)
 
     l_textr12 = tkinter.Label(Edit, text="Einsatzende:")
-    l_textr12.grid(column=0, row=12)
+    l_textr12.grid(column=0, row=9)
     e_CurrentPatEndt = tkinter.Entry(Edit)
     e_CurrentPatEndt.insert(0, str(Patlist[index].Endt))
-    e_CurrentPatEndt.grid(column=1, row=12)
+    e_CurrentPatEndt.grid(column=1, row=9)
+
+    b_now_endt = tkinter.Button(Edit, text="Jetzt", command=lambda: [e_CurrentPatEndt.delete(0, tkinter.END), e_CurrentPatEndt.insert(0, now())])
+    b_now_endt.grid(column=2, row=9)
 
     l_textr13 = tkinter.Label(Edit, text="Protokoll fertig:")
-    l_textr13.grid(column=0, row=13)
+    l_textr13.grid(column=0, row=10)
     c_CurrentPatfin = tkinter.Checkbutton(Edit, variable=Done)
-    c_CurrentPatfin.grid(column=1, row=13)
+    c_CurrentPatfin.grid(column=1, row=10)
     if Patlist[index].finished == 1:
         c_CurrentPatfin.select()
 
     l_textr14 = tkinter.Label(Edit, text="NACA:")
-    l_textr14.grid(column=0, row=14)
+    l_textr14.grid(column=0, row=11)
     e_CurrentPatNACA = tkinter.Entry(Edit)
     e_CurrentPatNACA.insert(0, str(Patlist[index].Naca))
-    e_CurrentPatNACA.grid(column=1, row=14)
-
-    l_textr8= tkinter.Label(Edit, text="Triage-Kategorie:")
-    l_textr8.grid(column=0, row=8)
-    e_CurrentPatTriage = ttk.Combobox(Edit, values=TriageCategories, state="readonly")
-    e_CurrentPatTriage.set(Patlist[index].Triage)
-    e_CurrentPatTriage.grid(column=1, row=8)
+    e_CurrentPatNACA.grid(column=1, row=11)
 
     l_textr15 = tkinter.Label(Edit, text="Kommentar:")
-    l_textr15.grid(column=0, row=15)
+    l_textr15.grid(column=0, row=12)
     e_CurrentPatComment = tkinter.Entry(Edit)
     e_CurrentPatComment.insert(0, str(Patlist[index].Comment))
-    e_CurrentPatComment.grid(column=1, row=15)
+    e_CurrentPatComment.grid(column=1, row=12)
 
-    b_now_alarmt = tkinter.Button(Edit, text="Jetzt", command=lambda: [e_CurrentPatAlarmt.delete(0, tkinter.END), e_CurrentPatAlarmt.insert(0, now())])
-    b_now_alarmt.grid(column=2, row=4)
-
-    b_now_bot = tkinter.Button(Edit, text="Jetzt", command=lambda: [e_CurrentPatBot.delete(0, tkinter.END), e_CurrentPatBot.insert(0, now())])
-    b_now_bot.grid(column=2, row=7)
-
-    b_now_hstt = tkinter.Button(Edit, text="Jetzt", command=lambda: [e_CurrentPatHSTt.delete(0, tkinter.END), e_CurrentPatHSTt.insert(0, now())])
-    b_now_hstt.grid(column=2, row=9)
-
-    b_now_endt = tkinter.Button(Edit, text="Jetzt", command=lambda: [e_CurrentPatEndt.delete(0, tkinter.END), e_CurrentPatEndt.insert(0, now())])
-    b_now_endt.grid(column=2, row=12)
 
     def update_finished_state(*args):
         if e_CurrentPatHSTt.get() != "-" and l_SelectedPlace.cget("text") != "-" and e_CurrentPatEndt.get() != "-":
@@ -464,6 +525,32 @@ def Edit_pat(index):
 
     update_finished_state()
 
+    # Add keyboard shortcuts
+    Edit.bind(shortcuts.Confirm, lambda event: [
+        Patlist[index].setAlarmt(e_CurrentPatAlarmt.get()),
+        Patlist[index].setAlarmstr(e_CurrentPatAlarmstr.get()),
+        Patlist[index].setBOplace(e_CurrentPatBO.get()),
+        Patlist[index].setBOt(e_CurrentPatBot.get()),
+        Patlist[index].setHSTt(e_CurrentPatHSTt.get()),
+        Patlist[index].setTransportOrg(e_CurrentPatTransportAgency.get()),
+        Patlist[index].setEndt(e_CurrentPatEndt.get()),
+        Patlist[index].setNaca(e_CurrentPatNACA.get()),
+        Patlist[index].setTriage(e_CurrentPatTriage.get()),
+        Patlist[index].setfinished(Done.get()),
+        Patlist[index].setComment(e_CurrentPatComment.get()),
+        write_list(Patlist),
+        Update_lables(), 
+        Edit.destroy()
+    ])
+    Edit.bind(shortcuts.Cancel, lambda event: Edit.destroy())
+    Edit.bind(shortcuts.PatientDel, lambda event: [delete_patient_ask(), Edit.destroy()])
+    Edit.bind(shortcuts.NowBeginTime, lambda event: [e_CurrentPatAlarmt.delete(0, tkinter.END), e_CurrentPatAlarmt.insert(0, now())])
+    Edit.bind(shortcuts.NowBoTime, lambda event: [e_CurrentPatBot.delete(0, tkinter.END), e_CurrentPatBot.insert(0, now())])
+    Edit.bind(shortcuts.NowHstTime, lambda event: [e_CurrentPatHSTt.delete(0, tkinter.END), e_CurrentPatHSTt.insert(0, now())])
+    Edit.bind(shortcuts.NowEndTime, lambda event: [e_CurrentPatEndt.delete(0, tkinter.END), e_CurrentPatEndt.insert(0, now())])
+    Edit.bind(shortcuts.SelectPlace, lambda event: SelectPlace_Window(index, l_SelectedPlace))
+    Edit.bind(shortcuts.ProtocolFinished, lambda event: Done.set(not Done.get()) if c_CurrentPatfin.cget('state') == tkinter.NORMAL else None)
+
 # Function to select a place for the patient
 def SelectPlace_Window(index, l_SelectedPlace):
     SelectPlace = tkinter.Toplevel(main_window)
@@ -471,29 +558,57 @@ def SelectPlace_Window(index, l_SelectedPlace):
     SelectPlace.focus_force()
 
     l_Ausl = tkinter.Label(SelectPlace, text="Auslastung:")
-    l_Ausl.grid(column=0, row=0)
+    l_Ausl.grid(column=0, row=0, columnspan=2)
     row = 1
     for place, max_count in max_counts.items():
         current_count = sum(1 for patient in Patlist if patient.HSTPlace == place and patient.Endt == "-")
         percentage = (current_count / max_count) * 100
-        usage_label = tkinter.Label(SelectPlace, text=f"{place}: {current_count}/{max_count} ({percentage:.2f}%)")
+        
+        if percentage >= 80:
+            bg_color = "red"
+        elif percentage >= 50:
+            bg_color = "yellow"
+        else:
+            bg_color = "green"
+        
+        usage_label = tkinter.Label(SelectPlace, text=f"{place}: {current_count}/{max_count} ({percentage:.2f}%)", bg=bg_color)
         usage_label.grid(column=0, row=row)
         
-        # Determine button color based on usage percentage
-        if percentage >= 80:
-            color = "red"
-        elif percentage >= 50:
-            color = "yellow"
-        else:
-            color = "green"
+        progress = ttk.Progressbar(SelectPlace, length=200, mode='determinate')
+        progress['value'] = percentage
+        progress.grid(column=1, row=row)
         
-        b_Select = tkinter.Button(SelectPlace, text="Auswählen", bg=color, command=lambda p=place: [
-            Patlist[index].setHSTPlace(p),
-            l_SelectedPlace.config(text=p),
-            SelectPlace.destroy()
-        ])
-        b_Select.grid(column=1, row=row)
         row += 1
+
+    l_SelectPlace = tkinter.Label(SelectPlace, text="Behandlungsplatz auswählen:")
+    l_SelectPlace.grid(column=0, row=row, pady=10)
+
+    place_var = tkinter.StringVar()
+    place_dropdown = ttk.Combobox(SelectPlace, textvariable=place_var, values=list(max_counts.keys()), state="readonly")
+    place_dropdown.grid(column=1, row=row, pady=10)
+
+    def select_place(event=None):
+        selected_place = place_var.get()
+        if selected_place:
+            Patlist[index].setHSTPlace(selected_place)
+            l_SelectedPlace.config(text=selected_place)
+            SelectPlace.destroy()
+
+    SelectPlace.bind(shortcuts.Confirm, select_place)
+    SelectPlace.bind(shortcuts.Cancel, lambda event: SelectPlace.destroy())
+
+    def select_place(event=None):
+        selected_place = place_var.get()
+        if selected_place:
+            Patlist[index].setHSTPlace(selected_place)
+            l_SelectedPlace.config(text=selected_place)
+            SelectPlace.destroy()
+
+    b_Select = tkinter.Button(SelectPlace, text="Auswählen", command=select_place)
+    b_Select.grid(column=0, row=row+1, columnspan=2, pady=10)
+
+    SelectPlace.bind(shortcuts.Confirm, select_place)
+    SelectPlace.bind(shortcuts.Cancel, lambda event: SelectPlace.destroy())
 
 # Function to create a new patient
 def NewPat():
@@ -511,14 +626,17 @@ def NewPat_Button():
     top = tkinter.Toplevel(main_window)
     top.title("Neuer Patient")
     top.focus_force()
-    l_newPatinfo = tkinter.Label(top, text="Neuer Patient mit der Ablagenummer " + str(latestpatindex() + 1))
+    l_newPatinfo = tkinter.Label(top, text="Wollen Sie einen neuen Patienten anlegen?")
     l_newPatinfo.pack()
 
-    b_OK = tkinter.Button(top, text="OK", command=lambda: [NewPat(), Update_lables(), top.destroy()])
-    b_Cancel = tkinter.Button(top, text="Abbruch", command=lambda: [top.destroy()])
+    b_OK = tkinter.Button(top, text="Ja", command=lambda: [NewPat(), Update_lables(), top.destroy()])
+    b_Cancel = tkinter.Button(top, text="Nein", command=lambda: [top.destroy()])
 
     b_OK.pack()
     b_Cancel.pack()
+
+    top.bind(shortcuts.Confirm, lambda event: [NewPat(), Update_lables(), top.destroy()])
+    top.bind(shortcuts.Cancel, lambda event: [top.destroy()])
 
 # Function to delete the current patient
 def DelPat():
@@ -536,6 +654,8 @@ def DelPat_Button():
 # Function to create a new Betreuung
 def NewBetreuung():
     global Betreuungen
+    global filepath
+    setDatfromFile(filepath)
     Betreuungen = Betreuungen + 1
     print("Neue Betreuung mit der Nummer", Betreuungen)
     saveDatinFile(filepath)
@@ -643,6 +763,10 @@ def Init_Stats():
     b_OK.grid(row=len(place_entries) + 11, column=1)
     b_Cancel.grid(row=len(place_entries) + 11, column=0)
 
+    # Add keyboard shortcuts
+    Init.bind(shortcuts.Confirm, lambda event: save_stats())
+    Init.bind(shortcuts.Cancel, lambda event: Init.destroy())
+
 # Function to write the patient list to a file
 def write_list(list):
     global AmbName
@@ -698,7 +822,7 @@ def ExportPatlist():
     path = 'Userdata/Export/' + re.sub(r'\W+', '_', AmbNum) + "_" + AmbName + '.csv'
     with open(path, 'w', newline='', encoding='utf-8') as csvfile:
         spamwriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        spamwriter.writerow(["Pat-Nr", "Alarmzeit", "B.Grund", "BO", "BO-Zeit", "HST-Zeit", "Triage-Kat", "Behandlungsstelle", "Abtransport", "NACA", "Fertig", "Kommentar", str(Betreuungen) + " Betreuungen"])
+        spamwriter.writerow(["Pat-Nr", "Alarmzeit", "B.Grund", "BO", "BO-Zeit", "HST-Zeit", "Sichtungs-Kat", "Behandlungsstelle", "Abtransport", "NACA", "Fertig", "Kommentar", str(Betreuungen) + " Betreuungen"])
         for x in range(len(Patlist)):
             if x > 0:
                 is_finished = "Nein"
@@ -843,10 +967,13 @@ def DisplayPatientsInPlace():
         place_label = tkinter.Label(place_window, text=f"{place}: {count} von {max_count} Plätzen belegt ({percentage:.2f}%)", bg=bg_color)
         place_label.grid(column=0, row=row)
         row += 1
-        
+
+    place_window.bind(shortcuts.Cancel, lambda event: place_window.destroy())
 
 def DetailedStats():
     global Betreuungen
+
+    setDatfromFile(filepath)
 
     stats = tkinter.Toplevel(main_window)
     stats.title("Detaillierte Statistik")
@@ -942,6 +1069,8 @@ def DetailedStats():
         
     create_pie_chart(total_counts, "Summe", row+2, 10)
 
+    stats.bind(shortcuts.Cancel, lambda event: stats.destroy())
+
 # Function to create x patients with random Triage Categories
 def CreateRandomPatients(x):
     global CurrentPatindex
@@ -1030,7 +1159,7 @@ l_textr7.grid(column=0, row=5)
 l_CurrentPatBot = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].BOt))
 l_CurrentPatBot.grid(column=1, row=5)
 
-l_textr14 = tkinter.Label(patient_info_frame, text="Triage-Kategorie:")
+l_textr14 = tkinter.Label(patient_info_frame, text="Sichtungs-Kategorie:")
 l_textr14.grid(column=0, row=6)
 l_CurrentPatTriage = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].Triage))
 l_CurrentPatTriage.grid(column=1, row=6)
@@ -1117,8 +1246,10 @@ def open_menu_window():
     b_stats = tkinter.Button(menu_window, text="Statistik anzeigen", command=lambda:[DetailedStats(), menu_window.destroy()])
     b_stats.grid(row=0, column=1)
 
-    l_Update = tkinter.Label(menu_window, text="Letztes Update: " + lastUpdate)
+    l_Update = tkinter.Label(menu_window, text="Letztes Patienten Update: " + lastUpdate)
     l_Update.grid(column=0, row=5)
+    l_version = tkinter.Label(menu_window, text="AMB-Dash-Version: "+Version)
+    l_version.grid(column=0, row=6)
 
     #b_create_random_patients = tkinter.Button(menu_window, text="Erstelle zufällige Patienten", command=lambda: [CreateRandomPatients(10), menu_window.destroy()])
     #b_create_random_patients.grid(row=4, column=0)
@@ -1128,6 +1259,27 @@ b_open_menu.grid(row=0, column=0)
 
 icon = tkinter.PhotoImage(file="image_files/RK.png")
 main_window.wm_iconphoto(False, icon)
+
+#shortcut definitions for the main Window
+main_window.bind(shortcuts.DataSave, lambda event: [Button_saveDat()])
+main_window.bind(shortcuts.DataSaveAs, lambda event: [Button_saveasDat()])
+main_window.bind(shortcuts.DataLoad, lambda event: [Button_setDat()])
+
+main_window.bind(shortcuts.PatientNew, lambda event: [Button_read_list(), NewPat_Button()])
+main_window.bind(shortcuts.NextPatient, lambda event: [NextPat_Button()])
+main_window.bind(shortcuts.PreviousPatient, lambda event: [PrevPat_Button()])
+main_window.bind(shortcuts.PatientEdit, lambda event: [Edit_pat(CurrentPatindex)])
+main_window.bind(shortcuts.SpecificPatient, prompt_edit_patient)
+
+main_window.bind(shortcuts.BetreuungNew, lambda event: [NewBetreuung_Button()])
+main_window.bind(shortcuts.BetreuungDel, lambda event: [DelBetreuung_Button()])
+
+main_window.bind(shortcuts.Fullscreen, toggle_fullscreen)
+
+main_window.bind(shortcuts.FilterMenu, lambda event: [open_filter_menu()])
+main_window.bind(shortcuts.AuslastungMenu, lambda event: [DisplayPatientsInPlace()])
+main_window.bind(shortcuts.Statistik, lambda event: [DetailedStats()])
+main_window.bind(shortcuts.EditConfig, lambda event: [Init_Stats()])
 
 Update_lables()
 
@@ -1141,7 +1293,7 @@ def on_closing():
     print("Anzahl der Betreuungen:", Betreuungen)
     print("\n")
     print("Vielen Dank für die Nutzung von Ambulanz-Dashboard")
-    print("Version: 1.1.2")
+    print("Version: " + Version)
     print("Entwickler: Simon")
     print("Besuchen Sie meine Website für mehr Informationen.")
     print("Programm beendet")
@@ -1158,10 +1310,9 @@ def check_file_modification():
     current_modification_time = os.path.getmtime(ambdat_filepath)
     if current_modification_time != last_modification_time:
         last_modification_time = current_modification_time
-
-        time.sleep(0.1)  # Wait for the file to be written
         Patlist = read_list()
-        #CurrentPatindex = 0
+        if CurrentPatindex >= latestpatindex():
+            CurrentPatindex = latestpatindex()
         Update_lables()
         Update_patient_list()
         

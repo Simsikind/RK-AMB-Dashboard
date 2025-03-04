@@ -54,6 +54,9 @@ Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patienten
 7. **Manuelle Einstellungen der Ambulanzdaten**:
    - Über das Menü **Daten manuell Setzen** können die Ambulanznummer, der Name und das Datum manuell eingestellt werden. Weiters kann die Bettenaufteilung geändert werden.
 
+8. **Filter Menü**:
+   - Über das Menü **Filter Menü öffnen** können Sie Filter für die Patientenliste setzen, um nur aktive Patienten, Patienten an einem bestimmten Behandlungsplatz oder Patienten mit einer bestimmten Abtransport-Organisation anzuzeigen.
+
 ### Weitere Hinweise
 
 - **Ordnerstrukturen**: 
