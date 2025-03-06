@@ -1,72 +1,196 @@
-# Patientenverwaltung - Ambulanz Dashboard
+# Ambulanz-Dashboard Bedienungsanleitung
 
-Dieses Projekt bietet ein Dashboard zur Verwaltung und Bearbeitung von Patientendaten im Zuge einer Ambulanz. Die Anwendung ermöglicht das Hinzufügen, Bearbeiten und Exportieren von Patienten- und Betreuungsdaten über eine grafische Benutzeroberfläche (GUI), die mit Python und Tkinter erstellt wurde.
+## Version 1.3
+
+Ein Organisationsprogramm für Ambulanzen  
+Geschrieben von Simon B.  
+März 2025  
+
+---
+
+## Inhaltsverzeichnis
+
+1. [Einführende Worte](#einführende-worte)
+2. [Systemvoraussetzungen](#systemvoraussetzungen)
+   - Standard
+   - Für Nerds
+3. [Installation](#installation)
+4. [Start des Programms](#start-des-programms)
+   - Standard
+   - Für Nerds
+5. [Benutzeroberfläche](#benutzeroberfläche)
+6. [Ambulanzdatenverwaltung](#ambulanzdatenverwaltung)
+   - Ambulanzdaten konfigurieren
+   - Ambulanzdaten speichern (als)
+   - Ambulanzdaten öffnen
+7. [Patientenverwaltung](#patientenverwaltung)
+   - Patienten erstellen
+   - Patienten bearbeiten
+   - Die Patientenliste
+   - Sortieren
+   - Filtern
+8. [Auslastung](#auslastung)
+9. [Sonstige Funktionen](#sonstige-funktionen)
+   - Statistik anzeigen
+   - Patientenliste exportieren
+10. [Tastaturbefehle](#tastaturbefehle)
+11. [Multi-Computer-System](#multi-computer-system)
+    - NAS
+    - Windows-Filesharing
+12. [Abschließende Worte](#abschließende-worte)
+
+---
+
+## Einführende Worte
+
+Das "Ambulanz-Dashboard" wurde entwickelt, um den Workflow in Behandlungsstellen zu optimieren. 
+Es ersetzt Microsoft Excel für die Sichtung und Zuordnung von Patienten. 
+
+Dieses Dokument beschreibt die Nutzung des Programms.
+
+Kontakt bei Fragen: **simonios17@gmail.com**
+
+---
+
+## Systemvoraussetzungen
+
+### Standard
+- Windows 10
+- Läuft ohne weitere Anpassungen
+
+### Für Nerds
+- Andere Betriebssysteme benötigen Python 3
+- Notwendige Libraries folgen
+- Getestet auf Raspbian (Raspberry Pi 3B+)
+- 
+
+---
 
 ## Installation
 
-1. **Projekt herunterladen**:
-   - Besuchen Sie das [GitHub-Repository](https://github.com/Simsikind/RK-AMB-Dashboard) und laden Sie das Projekt als `.zip` herunter.
-   - Entpacken Sie das `.zip`-Archiv an einem gewünschten Ort auf Ihrem Computer.
+1. **Download:**
+   - Das Programm kann unter `github.com/Simsikind/RK-AMB-Dashboard` heruntergeladen werden.
+   - Klicke auf "Code" > "Download ZIP".
+2. **Entpacken:**
+   - Der heruntergeladene Ordner muss entpackt werden.
+   - Der Speicherort sollte gemerkt werden.
 
-2. **Anwendung starten**:
-   - Die Anwendung kann über die enthaltene EXE-Datei gestartet werden.
-   - Alternativ können Sie den Quellcode ausführen (siehe dazu den Punkt **Anwendung starten**).
+---
 
-## Anwendung starten
+## Start des Programms
 
-1. **Über die EXE-Datei**: Doppelklicken Sie die bereitgestellte EXE-Datei, um das Programm zu starten.
+### Standard
+- **Windows:** `Ambulanz-Dashboard.exe` starten.
 
-2. **Über den Quellcode**: Falls Sie die Anwendung aus dem Quellcode starten möchten, führen Sie `main.py` aus:
-    ```bash
-    python main.py
-    ```
+### Für Nerds
+- **Linux/Mac:** `main.py` mit Python 3 starten.
+- Programm benötigt 30-45 Sekunden zum Starten.
 
-## Anwendung verwenden
+---
 
-**WICHTIG**: Vor der Verwendung der Anwendung sollten die **Ambulanzdaten gesetzt** werden. Dies kann auf zwei Arten geschehen:
-   - Ambulanzdaten manuell eingeben und anschließend speichern. Hierbei ist zu beachten, dass der Dateiname unbedingt mit `.dat` erweitert werden muss.
-   - Ambulanzdaten aus einer Datei laden, die bereits die notwendigen Informationen enthält.
+## Benutzeroberfläche
 
-### Hauptfunktionen
+Die UI gliedert sich in:
+1. Ambulanzdaten-Bereich
+2. Patientendetail-Bereich
+3. Patientenliste
+4. Betreuungs-Bereich
+5. Auslastungsanzeige
 
-1. **Patienten hinzufügen/löschen**:
-   - **Neuer Patient**: Fügt einen neuen Patienten mit einer fortlaufenden, eindeutigen Ablagenummer (ID) zur Liste hinzu.
-   - **Patient löschen**: Entfernt den zuletzt hinzugefügten Patienten aus der Liste.
+---
 
-2. **Patientendaten bearbeiten**:
-   - Wählen Sie einen Patienten aus und klicken Sie auf **Pat Bearbeiten**, um Details wie Alarmzeit, Berufungsgrund, Berufungsort, Zeit auf Behandlung, Behandlungsstelle, NACA-Wert, Abtransport-Organisation und andere Felder zu ändern.
+## Ambulanzdatenverwaltung
 
-3. **Navigation**:
-   - Mit den Buttons `>` und `<` kann zwischen Patienten gewechselt werden, um deren Daten anzuzeigen.
+### Ambulanzdaten konfigurieren
+- Über `Menü öffnen` > `Daten konfigurieren` können Ambulanzdaten eingegeben werden.
 
-4. **Betreuungen hinzufügen/löschen**:
-   - **Neue Betreuung**: Fügt eine Betreuung zur Gesamtliste hinzu.
-   - **Betreuung Löschen**: Entfernt die zuletzt hinzugefügte Betreuung.
+### Ambulanzdaten speichern (als)
+- Im Menü auf `Daten speichern als` klicken.
+- Datei mit `.dat` speichern.
 
-5. **Statistik**:
-   - Um eine Statistik der Patienten anzuzeigen, klicken Sie auf **Statistik anzeigen**
+### Ambulanzdaten öffnen
+- Gespeicherte Datei kann über `Daten lesen` geladen werden.
 
-6. **Daten exportieren und speichern**:
-   - **Daten in Datei speichern**: Speichert alle Ambulanzdaten in einer `.dat`-Datei.
-   - **Daten aus Datei laden**: Lädt Ambulanz- und Patientendaten aus einer `.dat`-Datei.
-   - **Patientenliste exportieren**: Exportiert die aktuelle Patientenliste in eine CSV-Datei im Ordner `Export`.
+---
 
-7. **Manuelle Einstellungen der Ambulanzdaten**:
-   - Über das Menü **Daten manuell Setzen** können die Ambulanznummer, der Name und das Datum manuell eingestellt werden. Weiters kann die Bettenaufteilung geändert werden.
+## Patientenverwaltung
 
-8. **Filter Menü**:
-   - Über das Menü **Filter Menü öffnen** können Sie Filter für die Patientenliste setzen, um nur aktive Patienten, Patienten an einem bestimmten Behandlungsplatz oder Patienten mit einer bestimmten Abtransport-Organisation anzuzeigen.
+### Patienten erstellen
+- Roter Knopf `[Neuer Patient]` klicken.
 
-### Weitere Hinweise
+### Patienten bearbeiten
+- Pflichtfelder: Behandlungszeit, Platz, Einsatzende.
 
-- **Ordnerstrukturen**: 
-  - Ein Ordner `Export` wird für den CSV-Export der Patientenliste erstellt.
-  - Ein Ordner `PatDat` wird für die Speicherung und den Import von Patientenlisten angelegt.
-  
-- **Datenstrukturen**:
-  - Patienten werden in einer Liste (`Patlist`) gespeichert, und jede Patienteninstanz wird durch die `Patient`-Klasse in `functions.py` definiert.
+### Die Patientenliste
+- **Sortieren:** Nach jeder Spalte möglich.
+- **Filtern:** Über `[Filter Menü öffnen]` möglich.
 
-## Bekannte Einschränkungen
+---
 
-- **Datensicherung**: Alle Patientendaten werden lokal als Binärdateien gespeichert und müssen manuell geladen und gespeichert werden.
-- **Datenintegrität**: Die Anwendung stellt sicher, dass keine Patientendaten als Textfile gespeichert werden. Daher sind die Daten nur mit dieser Anwendung verwendbar. Trotzdem dürfen in die Textfelder keine Daten eingetragen werden, die Drittparteien ein Zuordnen des Datensatzes zu realen Personen ermöglichen. Die Verantwortung hierfür liegt beim Benutzer.
+## Auslastung
+
+- Wird in % angezeigt.
+- Details über `[Auslastung-Details]` abrufbar.
+- Farben:
+  - **Grün:** <50%
+  - **Gelb:** 50%-80%
+  - **Rot:** >80%
+
+---
+
+## Sonstige Funktionen
+
+### Statistik anzeigen
+- Zeigt NACA-Scores der Patienten an.
+
+### Patientenliste exportieren
+- Export als `.csv` Datei.
+- Speicherort: `\Userdata\Export`
+
+---
+
+## Tastaturbefehle
+
+- **Universell:**
+  - Bestätigen: `<Return>`
+  - Abbrechen: `<Escape>`
+  - Vollbildmodus: `<F11>`
+- **Datenverwaltung:**
+  - Laden: `<Ctrl-o>`
+  - Speichern: `<Ctrl-s>`
+- **Patientenverwaltung:**
+  - Neuer Patient: `<Ctrl-n>`
+  - Bearbeiten: `<Ctrl-e>`
+  - Löschen: `<Ctrl-Delete>`
+- **Filter:**
+  - Nur aktive Patienten: `<Ctrl-a>`
+  - Filter zurücksetzen: `<Ctrl-r>`
+
+---
+
+## Multi-Computer-System
+
+### NAS
+- Programmordner auf NAS speichern.
+- Zugriff über Windows-Netzwerk.
+
+### Windows-Filesharing
+- Programmordner freigeben:
+  1. Rechtsklick > `Zugriff gewähren auf` > `Bestimmte Personen`
+  2. `Jeder` hinzufügen
+  3. Berechtigung auf `Lesen/Schreiben` setzen
+  4. Freigabe aktivieren
+- Zugriff über Netzwerk-Explorer möglich.
+
+---
+
+## Abschließende Worte
+
+Für Fragen, Anmerkungen oder Verbesserungsvorschläge: **simonios17@gmail.com**
+
+Dieses Projekt ist Open-Source und kann auf GitHub verbessert werden. 
+
+Viel Spaß mit dem Ambulanz-Dashboard!
+
+**Liebe Grüße,**  
+Simon B.
