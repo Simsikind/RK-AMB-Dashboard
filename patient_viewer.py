@@ -4,6 +4,7 @@ import pickle
 import os
 import re
 import time
+import functions
 
 # Function to get the data from the .dat file
 def read_data(filepath):
