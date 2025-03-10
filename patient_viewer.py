@@ -50,8 +50,8 @@ def update_patient_list():
 
     row_index = 1  # Start after the legend
     for patient in Patlist:
-        if patient.Num == 0 or patient.Endt != "-":
-            continue  # Skip patient 0 and inactive patients
+        if patient.Num == 0 or patient.Endt != "-" or (filter_place and patient.HSTPlace != filter_place) or (filter_abtransport and patient.TransportAgency != filter_abtransport):
+            continue  # Skip patient 0, inactive patients, and those not matching filters
 
         color = {
             "Rot - I": "red",
@@ -75,6 +75,45 @@ def update_patient_list():
         separator.grid(row=row_index + 1, column=0, sticky="ew", pady=4)
         
         row_index += 2
+
+def open_filter_menu():
+    filter_window = tk.Toplevel(root)
+    filter_window.title("Filter Einstellungen")
+
+    tk.Label(filter_window, text="Behandlungsplatz:", font=("Arial", 16)).grid(row=0, column=0, padx=10, pady=10)
+    place_options = list(set(patient.HSTPlace for patient in Patlist))
+    place_options.append("")  # Add an empty option
+    place_var = tk.StringVar(filter_window)
+    place_var.set(filter_place)  # Default value
+    place_menu = tk.OptionMenu(filter_window, place_var, *place_options)
+    place_menu.config(font=("Arial", 16))
+    place_menu.grid(row=0, column=1, padx=10, pady=10)
+
+    tk.Label(filter_window, text="Abtransport:", font=("Arial", 16)).grid(row=1, column=0, padx=10, pady=10)
+    abtransport_options = list(set(patient.TransportAgency for patient in Patlist))
+    abtransport_options.append("")  # Add an empty option
+    abtransport_var = tk.StringVar(filter_window)
+    abtransport_var.set(filter_abtransport)  # Default value
+    abtransport_menu = tk.OptionMenu(filter_window, abtransport_var, *abtransport_options)
+    abtransport_menu.config(font=("Arial", 16))
+    abtransport_menu.grid(row=1, column=1, padx=10, pady=10)
+
+    def apply_filters():
+        global filter_place
+        global filter_abtransport
+        filter_place = place_var.get()
+        filter_abtransport = abtransport_var.get()
+        update_patient_list()
+        filter_window.destroy()
+
+    apply_button = tk.Button(filter_window, text="Anwenden", command=apply_filters, font=("Arial", 16))
+    apply_button.grid(row=2, column=0, columnspan=2, pady=20)
+
+# Add filter button to input frame
+
+# Initialize filter variables
+filter_place = ""
+filter_abtransport = ""
 
 # Function to update the usage (Auslastung) in the main window
 def update_usage():
@@ -146,7 +185,7 @@ def set_ambulanznummer():
 
 # Initialize the main window
 root = tk.Tk()
-root.title("Ambulanz-Dashboard Echtzeit")
+root.title("Patientenanzeige")
 
 # Create frames for the input and display
 input_frame = tk.Frame(root)
@@ -190,5 +229,11 @@ Patlist = []
 max_counts = {"Nicht zugeordnet": 100}
 last_modification_time = 0
 last_update_time = "-"
+
+input_frame = tk.Frame(root)
+input_frame.pack(pady=20)
+
+filter_button = tk.Button(input_frame, text="Filter", command=open_filter_menu, font=("Arial", 16))
+filter_button.pack(side="left", padx=20)
 
 root.mainloop()
