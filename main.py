@@ -1272,7 +1272,7 @@ main_window.bind(shortcuts.PatientEdit, lambda event: [Edit_pat(CurrentPatindex)
 main_window.bind(shortcuts.SpecificPatient, prompt_edit_patient)
 
 main_window.bind(shortcuts.BetreuungNew, lambda event: [NewBetreuung_Button()])
-main_window.bind(shortcuts.BetreuungDel, lambda event: [DelBetreuung_Button()])
+#main_window.bind(shortcuts.BetreuungDel, lambda event: [DelBetreuung_Button()])
 
 main_window.bind(shortcuts.Fullscreen, toggle_fullscreen)
 
