@@ -24,7 +24,7 @@ def now():
 
 # Global variables
 
-Version = "1.3.0"
+Version = "1.3.1"
 
 AmbNum = "Ambulanznummer (bitte setzten)"
 AmbName = "Ambulanzname (bitte setzten)"
@@ -49,6 +49,9 @@ def Pat0():
     Patlist[0].setComment("Geisterpatient")
 
 main_window = tkinter.Tk(className='~Amulanz-Dashboard~')
+
+main_window.grid_columnconfigure(4, weight=1)
+main_window.grid_rowconfigure(0, weight=1)
 
 Pat0()
 
@@ -297,10 +300,6 @@ filter_active = False
 filter_place = ""
 filter_transport = ""
 
-# Add a button to open the filter menu
-b_open_filter_menu = tkinter.Button(main_window, text="Filter Menü öffnen", command=open_filter_menu)
-b_open_filter_menu.grid(row=0, column=50)
-
 # Function to update labels in the main window
 def Update_lables():
     global lastUpdate
@@ -313,37 +312,47 @@ def Update_lables():
         if int(widget.grid_info()["row"]) >= 19:
             widget.grid_forget()
     
+    for widget in main_window.grid_slaves():
+        if int(widget.grid_info()["row"]) == 3 and isinstance(widget, tkinter.LabelFrame) and widget.cget("text") == "Behandlungsplatz-Auslastung":
+            widget.destroy()
+# Update feste Labels
     l_Pat.config(text=str(latestpatindex()) + " Patienten")
     l_Betreuungen.config(text=str(Betreuungen) + " Betreuungen")
-
-    l_CurrentPatNum.config(text=str(Patlist[CurrentPatindex].Num))
-    l_CurrentPatAlarmt.config(text=str(Patlist[CurrentPatindex].Alarmt))
-    l_CurrentPatAlarmstr.config(text=str(Patlist[CurrentPatindex].Alarmstr))
-    l_CurrentPatBO.config(text=str(Patlist[CurrentPatindex].BOplace))
-    l_CurrentPatBot.config(text=str(Patlist[CurrentPatindex].BOt))
-    l_CurrentPatHSTt.config(text=str(Patlist[CurrentPatindex].HSTt))
-    l_CurrentPatHSTplace.config(text=str(Patlist[CurrentPatindex].HSTPlace))
-    l_CurrentPatTransA.config(text=str(Patlist[CurrentPatindex].TransportAgency))
-    l_CurrentPatEndt.config(text=str(Patlist[CurrentPatindex].Endt))
-    l_CurrentPatfin.config(text=str(Patlist[CurrentPatindex].finished))
-    l_CurrentPatNACA.config(text=str(Patlist[CurrentPatindex].Naca))
-    l_CurrentPatTriage.config(text=str(Patlist[CurrentPatindex].Triage))
-    l_CurrentPatComment.config(text=str(Patlist[CurrentPatindex].Comment))
-
     l_AmbNum.config(text=AmbNum)
     l_AmbName.config(text=AmbName)
     l_AmbDate.config(text=AmbDate)
 
+    # Update dynamische Patienteninformationen
+    values = {
+        "Aktuell Angezeigter Pat Nr:": Patlist[CurrentPatindex].Num,
+        "Einsatzbeginn:": Patlist[CurrentPatindex].Alarmt,
+        "Berufungsgrund:": Patlist[CurrentPatindex].Alarmstr,
+        "Berufungsort:": Patlist[CurrentPatindex].BOplace,
+        "Zeit am BO:": Patlist[CurrentPatindex].BOt,
+        "Sichtungs-Kategorie:": Patlist[CurrentPatindex].Triage,
+        "Zeit auf der Behandlung:": Patlist[CurrentPatindex].HSTt,
+        "Behandlungsplatz:": Patlist[CurrentPatindex].HSTPlace,
+        "Abtransport:": Patlist[CurrentPatindex].TransportAgency,
+        "Einsatzende:": Patlist[CurrentPatindex].Endt,
+        "Protokoll fertig:": Patlist[CurrentPatindex].finished,
+        "NACA:": Patlist[CurrentPatindex].Naca,
+        "Kommentar:": Patlist[CurrentPatindex].Comment
+    }
+
+    for key, value in values.items():
+        if key in label_refs:
+            label_refs[key].config(text=str(value))
+
     # Update Behandlungsplätze usage
-    usage_frame = tkinter.Frame(main_window)
-    usage_frame.grid(column=1, row=6, columnspan=1, sticky="ew")
+    usage_frame = tkinter.LabelFrame(main_window, text="Behandlungsplatz-Auslastung", padx=10, pady=5)
+    usage_frame.grid(column=0, row=3, columnspan=3)
 
     b_Usage = tkinter.Button(usage_frame, text="Auslastung-Details", command=lambda:[DisplayPatientsInPlace()])
-    b_Usage.grid(row=0, column=0)
+    b_Usage.grid(row=0, column=3)
 
     l_Ausl = tkinter.Label(usage_frame, text="Auslastung:")
-    l_Ausl.grid(column=0, row=1)
-    row = 2
+    l_Ausl.grid(column=0, row=0)
+    row = 1
     for place, max_count in max_counts.items():
         current_count = sum(1 for patient in Patlist if patient.HSTPlace == place and patient.Endt == "-")
         percentage = (current_count / max_count) * 100
@@ -1082,140 +1091,37 @@ def CreateRandomPatients(x):
         CurrentPatindex =+ 1
     Update_lables()
 
+patient_list_section_frame = tkinter.LabelFrame(main_window, text="Patientenliste & Filter", padx=10, pady=10)
+patient_list_section_frame.grid(row=0, column=4, rowspan=21, columnspan=20, sticky="nsew", padx=5, pady=5)
+patient_list_section_frame.grid_rowconfigure(1, weight=1)
 
-# Create a scrollable frame for the patient list
-patient_list_canvas = tkinter.Canvas(main_window)
+
+main_window.grid_columnconfigure(4, weight=1)
+patient_list_section_frame.grid_columnconfigure(0, weight=1)
+main_window.grid_rowconfigure(0, weight=1)
+patient_list_section_frame.grid_rowconfigure(0, minsize=30)
+
+# Filter-Button ins neue Frame
+b_open_filter_menu = tkinter.Button(patient_list_section_frame, text="Filter Menü öffnen", command=open_filter_menu)
+b_open_filter_menu.grid(row=0, column=0, sticky="nw", padx=(5, 0))
+
+# Canvas + Scrollbar ins neue Frame
+patient_list_canvas = tkinter.Canvas(patient_list_section_frame)
 patient_list_frame = tkinter.Frame(patient_list_canvas)
-scrollbar = tkinter.Scrollbar(main_window, orient="vertical", command=patient_list_canvas.yview)
+scrollbar = tkinter.Scrollbar(patient_list_section_frame, orient="vertical", command=patient_list_canvas.yview)
 patient_list_canvas.configure(yscrollcommand=scrollbar.set)
 
-scrollbar.grid(row=0, column=3, rowspan=21, sticky="ns")
-patient_list_canvas.grid(row=0, column=4, rowspan=21, columnspan=20, sticky="nsew")
+# Grid-Anordnung
+patient_list_canvas.grid(row=1, column=0, sticky="nsew")
+scrollbar.grid(row=1, column=1, sticky="ns")
 patient_list_canvas.create_window((0, 0), window=patient_list_frame, anchor="nw")
 
+patient_list_canvas.configure(width=1, height=1)  # Hilft bei automatischer Breite/Höhe
 def on_frame_configure(canvas):
     canvas.configure(scrollregion=canvas.bbox("all"))
 
 patient_list_frame.bind("<Configure>", lambda event, canvas=patient_list_canvas: on_frame_configure(canvas))
 
-# Create frames for the buttons and labels
-ambulance_info_frame = tkinter.Frame(main_window)
-ambulance_info_frame.grid(row=0, column=0, columnspan=3, sticky="ew")
-
-separator1 = tkinter.Label(main_window, text="----------------------------------------------------------------------------------------")
-separator1.grid(row=1, column=0, columnspan=3, sticky="ew")
-
-patient_info_frame = tkinter.Frame(main_window)
-patient_info_frame.grid(row=2, column=0, columnspan=3, sticky="ew")
-
-separator2 = tkinter.Label(main_window, text="----------------------------------------------------------------------------------------")
-separator2.grid(row=3, column=0, columnspan=3, sticky="ew")
-
-button_frame = tkinter.Frame(main_window)
-button_frame.grid(row=4, column=0, columnspan=3, sticky="ew")
-
-separator3 = tkinter.Label(main_window, text="----------------------------------------------------------------------------------------")
-separator3.grid(row=5, column=0, columnspan=3, sticky="ew")
-
-config_frame = tkinter.Frame(main_window)
-config_frame.grid(row=0, column=2, columnspan=1, sticky="ew")
-
-b_newBet = tkinter.Button(button_frame, text='Neue Betreuung', command=lambda: (NewBetreuung_Button()), bg="green")
-b_newBet.grid(column=2, row=0)
-l_Betreuungen = tkinter.Label(button_frame, text=str(Betreuungen) + " Betreuungen")
-l_Betreuungen.grid(column=1, row=0)
-b_DelBet = tkinter.Button(button_frame, text='Betreuung Löschen', command=lambda: (DelBetreuung_Button()), bg="green")
-b_DelBet.grid(column=0, row=0)
-
-#b_newPat = tkinter.Button(patient_info_frame, text='Neuesten Pat. löschen', command=lambda: (DelPat_Button()), bg="red")
-#b_newPat.grid(column=0, row=0)
-l_Pat = tkinter.Label(patient_info_frame, text=str(latestpatindex()) + " Patienten")
-l_Pat.grid(column=1, row=0)
-b_newPat = tkinter.Button(patient_info_frame, text='Neuer Patient', command=lambda: (Button_read_list(), NewPat_Button()), bg="red")
-b_newPat.grid(column=2, row=0)
-
-l_textr3 = tkinter.Label(patient_info_frame, text="Akuell Angezeigter Pat Nr:")
-l_textr3.grid(column=0, row=1)
-l_CurrentPatNum = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].Num))
-l_CurrentPatNum.grid(column=1, row=1)
-
-l_textr4 = tkinter.Label(patient_info_frame, text="Einsatzbeginn:")
-l_textr4.grid(column=0, row=2)
-l_CurrentPatAlarmt = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].Alarmt))
-l_CurrentPatAlarmt.grid(column=1, row=2)
-
-l_textr5 = tkinter.Label(patient_info_frame, text="Berufungsgrund:")
-l_textr5.grid(column=0, row=3)
-l_CurrentPatAlarmstr = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].Alarmstr))
-l_CurrentPatAlarmstr.grid(column=1, row=3)
-
-l_textr6 = tkinter.Label(patient_info_frame, text="Berufungsort:")
-l_textr6.grid(column=0, row=4)
-l_CurrentPatBO = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].BOplace))
-l_CurrentPatBO.grid(column=1, row=4)
-
-l_textr7 = tkinter.Label(patient_info_frame, text="Zeit am BO:")
-l_textr7.grid(column=0, row=5)
-l_CurrentPatBot = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].BOt))
-l_CurrentPatBot.grid(column=1, row=5)
-
-l_textr14 = tkinter.Label(patient_info_frame, text="Sichtungs-Kategorie:")
-l_textr14.grid(column=0, row=6)
-l_CurrentPatTriage = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].Triage))
-l_CurrentPatTriage.grid(column=1, row=6)
-
-l_textr8 = tkinter.Label(patient_info_frame, text="Zeit auf der Behandlung:")
-l_textr8.grid(column=0, row=7)
-l_CurrentPatHSTt = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].HSTt))
-l_CurrentPatHSTt.grid(column=1, row=7)
-
-l_textr9 = tkinter.Label(patient_info_frame, text="Behandlungsplatz:")
-l_textr9.grid(column=0, row=8)
-l_CurrentPatHSTplace = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].HSTPlace))
-l_CurrentPatHSTplace.grid(column=1, row=8)
-
-l_textr10 = tkinter.Label(patient_info_frame, text="Abtransport")
-l_textr10.grid(column=0, row=9)
-l_CurrentPatTransA = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].TransportAgency))
-l_CurrentPatTransA.grid(column=1, row=9)
-
-l_textr11 = tkinter.Label(patient_info_frame, text="Einsatzende:")
-l_textr11.grid(column=0, row=10)
-l_CurrentPatEndt = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].Endt))
-l_CurrentPatEndt.grid(column=1, row=10)
-
-l_textr12 = tkinter.Label(patient_info_frame, text="Protokoll fertig:")
-l_textr12.grid(column=0, row=11)
-l_CurrentPatfin = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].finished))
-l_CurrentPatfin.grid(column=1, row=11)
-
-l_textr13 = tkinter.Label(patient_info_frame, text="NACA:")
-l_textr13.grid(column=0, row=12)
-l_CurrentPatNACA = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].Naca))
-l_CurrentPatNACA.grid(column=1, row=12)
-
-l_textr15 = tkinter.Label(patient_info_frame, text="Kommentar:")
-l_textr15.grid(column=0, row=13)
-l_CurrentPatComment = tkinter.Label(patient_info_frame, text=str(Patlist[CurrentPatindex].Comment))
-l_CurrentPatComment.grid(column=1, row=13)
-
-b_prevPat = tkinter.Button(patient_info_frame, text="<", width=20, command=lambda: (PrevPat_Button()))
-b_prevPat.grid(row=14, column=0)
-
-b_nextPat = tkinter.Button(patient_info_frame, text=">", width=20, command=lambda: (NextPat_Button()))
-b_nextPat.grid(row=14, column=2)
-
-b_EditPat = tkinter.Button(patient_info_frame, width=20, text="Pat Bearbeiten", command=lambda: (Edit_pat(CurrentPatindex)))
-b_EditPat.grid(row=14, column=1)
-
-l_AmbNum = tkinter.Label(ambulance_info_frame, text=AmbNum, font=("Helvetica", 12, "bold"))
-l_AmbNum.grid(row=0, column=0)
-
-l_AmbName = tkinter.Label(ambulance_info_frame, text=AmbName, font=("Helvetica", 12, "bold"))
-l_AmbName.grid(row=1, column=0)
-
-l_AmbDate = tkinter.Label(ambulance_info_frame, text=AmbDate, font=("Helvetica", 12, "bold"))
-l_AmbDate.grid(row=2, column=0)
 
 def open_menu_window():
     menu_window = tkinter.Toplevel(main_window)
@@ -1254,8 +1160,85 @@ def open_menu_window():
     #b_create_random_patients = tkinter.Button(menu_window, text="Erstelle zufällige Patienten", command=lambda: [CreateRandomPatients(10), menu_window.destroy()])
     #b_create_random_patients.grid(row=4, column=0)
 
-b_open_menu = tkinter.Button(config_frame, text="Menü öffnen", command=open_menu_window)
-b_open_menu.grid(row=0, column=0)
+# Create frames for the buttons and labels
+# ------------------------- Frames -------------------------
+
+ambulance_info_frame = tkinter.LabelFrame(main_window, text="Ambulanz-Informationen", padx=10, pady=5)
+ambulance_info_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=5)
+
+patient_info_frame = tkinter.LabelFrame(main_window, text="Patientenübersicht", padx=10, pady=5)
+patient_info_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=5)
+
+button_frame = tkinter.LabelFrame(main_window, text="Betreuung verwalten", padx=10, pady=5)
+button_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=5)
+
+# ------------------------- Ambulanzdaten -------------------------
+
+l_AmbNum = tkinter.Label(ambulance_info_frame, text=AmbNum, font=("Helvetica", 12, "bold"))
+l_AmbNum.grid(row=0, column=0, sticky="w")
+
+l_AmbName = tkinter.Label(ambulance_info_frame, text=AmbName, font=("Helvetica", 12, "bold"))
+l_AmbName.grid(row=1, column=0, sticky="w")
+
+l_AmbDate = tkinter.Label(ambulance_info_frame, text=AmbDate, font=("Helvetica", 12, "bold"))
+l_AmbDate.grid(row=2, column=0, sticky="w")
+
+b_open_menu = tkinter.Button(ambulance_info_frame, text="Menü öffnen", command=open_menu_window)
+b_open_menu.grid(row=0, column=1, rowspan=3, padx=10)
+
+# ------------------------- Patientenübersicht -------------------------
+
+labels = [
+    ("Aktuell Angezeigter Pat Nr:", lambda: Patlist[CurrentPatindex].Num),
+    ("Einsatzbeginn:", lambda: Patlist[CurrentPatindex].Alarmt),
+    ("Berufungsgrund:", lambda: Patlist[CurrentPatindex].Alarmstr),
+    ("Berufungsort:", lambda: Patlist[CurrentPatindex].BOplace),
+    ("Zeit am BO:", lambda: Patlist[CurrentPatindex].BOt),
+    ("Sichtungs-Kategorie:", lambda: Patlist[CurrentPatindex].Triage),
+    ("Zeit auf der Behandlung:", lambda: Patlist[CurrentPatindex].HSTt),
+    ("Behandlungsplatz:", lambda: Patlist[CurrentPatindex].HSTPlace),
+    ("Abtransport:", lambda: Patlist[CurrentPatindex].TransportAgency),
+    ("Einsatzende:", lambda: Patlist[CurrentPatindex].Endt),
+    ("Protokoll fertig:", lambda: Patlist[CurrentPatindex].finished),
+    ("NACA:", lambda: Patlist[CurrentPatindex].Naca),
+    ("Kommentar:", lambda: Patlist[CurrentPatindex].Comment),
+]
+
+label_refs = {}  # dict für spätere Updates
+
+for i, (text, get_value) in enumerate(labels):
+    tkinter.Label(patient_info_frame, text=text).grid(row=i+1, column=0, sticky="e", padx=5, pady=2)
+    value_label = tkinter.Label(patient_info_frame, text=str(get_value()))
+    value_label.grid(row=i+1, column=1, sticky="w", padx=5, pady=2)
+    label_refs[text] = value_label  # Text ist der Key, z. B. "Einsatzbeginn:"
+
+# Patientenanzahl + Neuer Patient
+l_Pat = tkinter.Label(patient_info_frame, text=f"{latestpatindex()} Patienten")
+l_Pat.grid(row=0, column=0, sticky="w")
+
+b_newPat = tkinter.Button(patient_info_frame, text="Neuer Patient", command=lambda: (Button_read_list(), NewPat_Button()), bg="red")
+b_newPat.grid(row=0, column=1, sticky="e")
+
+# Navigation und Bearbeiten
+b_prevPat = tkinter.Button(patient_info_frame, text="<", width=15, command=PrevPat_Button)
+b_prevPat.grid(row=len(labels)+2, column=0, padx=5, pady=10)
+
+b_EditPat = tkinter.Button(patient_info_frame, text="Pat Bearbeiten", width=15, command=lambda: Edit_pat(CurrentPatindex))
+b_EditPat.grid(row=len(labels)+2, column=1, padx=5, pady=10)
+
+b_nextPat = tkinter.Button(patient_info_frame, text=">", width=15, command=NextPat_Button)
+b_nextPat.grid(row=len(labels)+2, column=2, padx=5, pady=10)
+
+# ------------------------- Betreuung -------------------------
+
+b_DelBet = tkinter.Button(button_frame, text="Betreuung Löschen", command=DelBetreuung_Button, bg="green")
+b_DelBet.grid(column=0, row=0, padx=5, pady=5)
+
+l_Betreuungen = tkinter.Label(button_frame, text=str(Betreuungen) + " Betreuungen")
+l_Betreuungen.grid(column=1, row=0, padx=5)
+
+b_newBet = tkinter.Button(button_frame, text="Neue Betreuung", command=NewBetreuung_Button, bg="green")
+b_newBet.grid(column=2, row=0, padx=5, pady=5)
 
 icon = tkinter.PhotoImage(file="image_files/RK.png")
 main_window.wm_iconphoto(False, icon)
