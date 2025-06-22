@@ -1,239 +1,162 @@
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk, filedialog, messagebox
 import pickle
 import os
 import re
 import time
-import functions
 
-# Function to get the data from the .dat file
-def read_data(filepath):
-    with open(filepath, "r") as file:
-        amb_num = re.sub('\n', '', file.readline())
-        amb_name = re.sub('\n', '', file.readline())
-        amb_date = re.sub('\n', '', file.readline())
-        betreuungen = int(re.sub('\n', '', file.readline()))
-        max_counts = {}
-        for line in file:
-            place, max_count = line.strip().split(":")
-            max_counts[place] = int(max_count)
-    return amb_num, amb_name, amb_date, betreuungen, max_counts
+class PatientDisplayApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Patientenanzeige")
 
-# Function to get the patient list from the .ambdat file
-def read_list(amb_num):
-    filepath = "PatDat/" + re.sub('[^0-9]', '', amb_num) + ".ambdat"
-    with open(filepath, "rb") as fp:
-        return pickle.load(fp)
+        # Daten
+        self.amb_num = ""
+        self.amb_name = ""
+        self.amb_date = ""
+        self.betreuuungen = 0
+        self.max_counts = {"Nicht zugeordnet": 100}
+        self.patlist = []
+        self.last_modification_time = 0
+        self.last_update_time = "-"
+        self.filter_place = ""
+        self.filter_abtransport = ""
 
-# Function to update the patient list in the scrollable frame
-def update_patient_list():
-    for widget in patient_list_frame.winfo_children():
-        widget.destroy()
+        # GUI-Elemente
+        self.setup_gui()
 
-    # Add legend at the top
-    legend_frame = tk.Frame(patient_list_frame)
-    legend_frame.grid(row=0, column=0, sticky="ew")
+    def setup_gui(self):
+        # Input Frame
+        self.input_frame = tk.Frame(self.root)
+        self.input_frame.pack(pady=20)
 
-    legend_items = [
-        ("| Nr.", "Num"),
-        ("| BeH-Zeit", "HSTt"),
-        ("| BeH", "HSTPlace"),
-        ("| Si-Ka", "Triage"),
-        ("| NACA", "Naca"),
-        ("| Ber.G", "Alarmstr"),
-        ("& Kommentar", "Comment")
-    ]
+        tk.Button(self.input_frame, text="Ambulanznummer setzen", command=self.set_ambulanznummer, font=("Arial", 16)).pack(side="left")
+        self.l_last_update = tk.Label(self.input_frame, text="Letztes Update: -", font=("Arial", 16))
+        self.l_last_update.pack(side="left", padx=20)
+        self.l_amb_info = tk.Label(self.input_frame, text=" | ", font=("Arial", 16))
+        self.l_amb_info.pack(side="left", padx=20)
+        tk.Button(self.input_frame, text="Filter", command=self.open_filter_menu, font=("Arial", 16)).pack(side="left", padx=20)
 
-    for text, color in legend_items:
-        legend_label = tk.Label(legend_frame, text=text, foreground="black", anchor="w", font=("Arial", 16))
-        legend_label.pack(side="left", fill="x")
+        # Canvas + Scrollbar
+        self.patient_list_canvas = tk.Canvas(self.root)
+        self.patient_list_frame = tk.Frame(self.patient_list_canvas)
+        scrollbar = tk.Scrollbar(self.root, orient="vertical", command=self.patient_list_canvas.yview)
+        self.patient_list_canvas.configure(yscrollcommand=scrollbar.set)
 
-    row_index = 1  # Start after the legend
-    for patient in Patlist:
-        if patient.Num == 0 or patient.Endt != "-" or (filter_place and patient.HSTPlace != filter_place) or (filter_abtransport and patient.TransportAgency != filter_abtransport):
-            continue  # Skip patient 0, inactive patients, and those not matching filters
+        scrollbar.pack(side="left", fill="y")
+        self.patient_list_canvas.pack(side="left", fill="both", expand=True)
+        self.patient_list_canvas.create_window((0, 0), window=self.patient_list_frame, anchor="nw")
+        self.patient_list_frame.bind("<Configure>", lambda event: self.patient_list_canvas.configure(scrollregion=self.patient_list_canvas.bbox("all")))
 
-        color = {
-            "Rot - I": "red",
-            "Gelb - II": "yellow",
-            "Grün - III": "green",
-            "Blau - IV": "blue",
-            "Schwarz (tot) - V": "black"
-        }.get(patient.Triage, "white")
+        # Usage Frame
+        self.usage_frame = tk.Frame(self.root)
+        self.usage_frame.pack(pady=20)
 
-        text_color = "white" if color in ["black", "blue"] else "black"
-        is_finished = "Ja" if patient.finished else "Nein"
-        if patient.Endt != "-" and not patient.finished:
-            text_color = "#990000"
-        patient_num_formatted = f"{patient.Num:03}"  # Format number as 001, 002, etc.
-        patient_info = f"{patient_num_formatted} | {patient.HSTt} | {patient.HSTPlace} | {patient.Triage} | {patient.Naca} | {patient.Alarmstr}: {patient.Comment}"
-        label = tk.Label(patient_list_frame, text=patient_info, background=color, foreground=text_color, anchor="w", font=("Arial", 16))
-        label.grid(row=row_index, column=0, sticky="w")
-        
-        # Add a separator line
-        separator = tk.Frame(patient_list_frame, height=2, bd=1, relief="sunken", background="black")
-        separator.grid(row=row_index + 1, column=0, sticky="ew", pady=4)
-        
-        row_index += 2
+    def read_data(self, filepath):
+        with open(filepath, "r") as file:
+            self.amb_num = file.readline().strip()
+            self.amb_name = file.readline().strip()
+            self.amb_date = file.readline().strip()
+            self.betreuuungen = int(file.readline().strip())
+            self.max_counts = {line.split(":")[0].strip(): int(line.split(":")[1]) for line in file}
 
-def open_filter_menu():
-    filter_window = tk.Toplevel(root)
-    filter_window.title("Filter Einstellungen")
+    def read_list(self):
+        filepath = f"PatDat/{re.sub('[^0-9]', '', self.amb_num)}.ambdat"
+        with open(filepath, "rb") as fp:
+            self.patlist = pickle.load(fp)
 
-    tk.Label(filter_window, text="Behandlungsplatz:", font=("Arial", 16)).grid(row=0, column=0, padx=10, pady=10)
-    place_options = list(set(patient.HSTPlace for patient in Patlist))
-    place_options.append("")  # Add an empty option
-    place_var = tk.StringVar(filter_window)
-    place_var.set(filter_place)  # Default value
-    place_menu = tk.OptionMenu(filter_window, place_var, *place_options)
-    place_menu.config(font=("Arial", 16))
-    place_menu.grid(row=0, column=1, padx=10, pady=10)
+    def update_patient_list(self):
+        for widget in self.patient_list_frame.winfo_children():
+            widget.destroy()
 
-    tk.Label(filter_window, text="Abtransport:", font=("Arial", 16)).grid(row=1, column=0, padx=10, pady=10)
-    abtransport_options = list(set(patient.TransportAgency for patient in Patlist))
-    abtransport_options.append("")  # Add an empty option
-    abtransport_var = tk.StringVar(filter_window)
-    abtransport_var.set(filter_abtransport)  # Default value
-    abtransport_menu = tk.OptionMenu(filter_window, abtransport_var, *abtransport_options)
-    abtransport_menu.config(font=("Arial", 16))
-    abtransport_menu.grid(row=1, column=1, padx=10, pady=10)
+        legend_frame = tk.Frame(self.patient_list_frame)
+        legend_frame.grid(row=0, column=0, sticky="ew")
+        legend_items = ["| Nr.", "| BeH-Zeit", "| BeH", "| Si-Ka", "| NACA", "| Ber.G", "& Kommentar"]
+        for item in legend_items:
+            tk.Label(legend_frame, text=item, font=("Arial", 16)).pack(side="left", fill="x")
 
-    def apply_filters():
-        global filter_place
-        global filter_abtransport
-        filter_place = place_var.get()
-        filter_abtransport = abtransport_var.get()
-        update_patient_list()
-        filter_window.destroy()
+        row_index = 1
+        for patient in self.patlist:
+            if patient.Num == 0 or patient.Endt != "-" or (self.filter_place and patient.HSTPlace != self.filter_place) or (self.filter_abtransport and patient.TransportAgency != self.filter_abtransport):
+                continue
 
-    apply_button = tk.Button(filter_window, text="Anwenden", command=apply_filters, font=("Arial", 16))
-    apply_button.grid(row=2, column=0, columnspan=2, pady=20)
+            color = {"Rot - I": "red", "Gelb - II": "yellow", "Gr\u00fcn - III": "green", "Blau - IV": "blue", "Schwarz (tot) - V": "black"}.get(patient.Triage, "white")
+            text_color = "white" if color in ["black", "blue"] else "black"
+            if patient.Endt != "-" and not patient.finished:
+                text_color = "#990000"
+            info = f"{patient.Num:03} | {patient.HSTt} | {patient.HSTPlace} | {patient.Triage} | {patient.Naca} | {patient.Alarmstr}: {patient.Comment}"
+            tk.Label(self.patient_list_frame, text=info, bg=color, fg=text_color, font=("Arial", 16)).grid(row=row_index, column=0, sticky="w")
+            tk.Frame(self.patient_list_frame, height=2, bd=1, relief="sunken", background="black").grid(row=row_index+1, column=0, sticky="ew", pady=4)
+            row_index += 2
 
-# Add filter button to input frame
+    def update_usage(self):
+        for widget in self.usage_frame.winfo_children():
+            widget.destroy()
 
-# Initialize filter variables
-filter_place = ""
-filter_abtransport = ""
+        tk.Label(self.usage_frame, text="Auslastung:", font=("Arial", 16)).grid(column=0, row=0)
+        row = 1
+        for place, max_count in self.max_counts.items():
+            current_count = sum(1 for p in self.patlist if p.HSTPlace == place and p.Endt == "-")
+            percentage = (current_count / max_count) * 100
+            bg_color = "green" if percentage < 50 else "yellow" if percentage < 80 else "red"
+            fg_color = "#880000" if percentage > 100 else "black"
+            tk.Label(self.usage_frame, text=f"{place}: {percentage:.2f}%", fg=fg_color, bg=bg_color, font=("Arial", 16)).grid(column=0, row=row, sticky="ew")
+            ttk.Progressbar(self.usage_frame, length=400, mode='determinate', value=percentage).grid(column=1, row=row)
+            row += 1
 
-# Function to update the usage (Auslastung) in the main window
-def update_usage():
-    for widget in usage_frame.winfo_children():
-        widget.destroy()
+    def open_filter_menu(self):
+        filter_window = tk.Toplevel(self.root)
+        filter_window.title("Filter Einstellungen")
 
-    l_Ausl = tk.Label(usage_frame, text="Auslastung:", font=("Arial", 16))
-    l_Ausl.grid(column=0, row=0)
-    row = 1
-    for place, max_count in max_counts.items():
-        current_count = sum(1 for patient in Patlist if patient.HSTPlace == place and patient.Endt == "-")
-        percentage = (current_count / max_count) * 100
-        text_color = "#880000" if percentage > 100 else "black"
-        
-        if percentage >= 80:
-            bg_color = "red"
-        elif percentage >= 50:
-            bg_color = "yellow"
-        else:
-            bg_color = "green"
+        places = list(set(p.HSTPlace for p in self.patlist)) + [""]
+        place_var = tk.StringVar(filter_window, value=self.filter_place)
+        tk.Label(filter_window, text="Behandlungsplatz:", font=("Arial", 16)).grid(row=0, column=0, padx=10, pady=10)
+        tk.OptionMenu(filter_window, place_var, *places).grid(row=0, column=1, padx=10, pady=10)
 
-        usage_label = tk.Label(usage_frame, text=f"{place}: {percentage:.2f}%", fg=text_color, bg=bg_color, font=("Arial", 16))
-        usage_label.grid(column=0, row=row, sticky="ew")
+        transports = list(set(p.TransportAgency for p in self.patlist)) + [""]
+        abtransport_var = tk.StringVar(filter_window, value=self.filter_abtransport)
+        tk.Label(filter_window, text="Abtransport:", font=("Arial", 16)).grid(row=1, column=0, padx=10, pady=10)
+        tk.OptionMenu(filter_window, abtransport_var, *transports).grid(row=1, column=1, padx=10, pady=10)
 
-        progress = ttk.Progressbar(usage_frame, length=400, mode='determinate')
-        progress['value'] = percentage
-        progress.grid(column=1, row=row)
+        def apply():
+            self.filter_place = place_var.get()
+            self.filter_abtransport = abtransport_var.get()
+            self.update_patient_list()
+            filter_window.destroy()
 
-        row += 1
+        tk.Button(filter_window, text="Anwenden", command=apply, font=("Arial", 16)).grid(row=2, column=0, columnspan=2, pady=20)
 
-# Function to check the file modification time and update the data
-def check_file_modification():
-    global Patlist
-    global last_modification_time
-    global last_update_time
-    ambdat_filepath = "PatDat/" + re.sub('[^0-9]', '', AmbNum) + ".ambdat"
-    current_modification_time = os.path.getmtime(ambdat_filepath)
-    if current_modification_time != last_modification_time:
-        last_modification_time = current_modification_time
+    def set_ambulanznummer(self):
+        file = filedialog.askopenfile(filetypes=[("Data-Datei", ".dat")])
+        if not file:
+            return
+        try:
+            self.read_data(file.name)
+            self.read_list()
+            filepath = f"PatDat/{re.sub('[^0-9]', '', self.amb_num)}.ambdat"
+            self.last_modification_time = os.path.getmtime(filepath)
+            self.update_patient_list()
+            self.update_usage()
+            self.l_amb_info.config(text=f"{self.amb_num} | {self.amb_name}")
+            self.check_file_modification()
+        except Exception as e:
+            messagebox.showerror("Fehler", str(e))
 
-        # Wait for the file to be written
-        time.sleep(0.1)
-        Patlist = read_list(AmbNum)
-        update_patient_list()
-        update_usage()
-        last_update_time = time.strftime("%Y-%m-%d %H:%M:%S")
-        l_last_update.config(text=f"Letztes Update: {last_update_time}")
-        
-    root.after(100, check_file_modification)  # Check every 0.1 second
+    def check_file_modification(self):
+        filepath = f"PatDat/{re.sub('[^0-9]', '', self.amb_num)}.ambdat"
+        current_time = os.path.getmtime(filepath)
+        if current_time != self.last_modification_time:
+            self.last_modification_time = current_time
+            time.sleep(0.1)
+            self.read_list()
+            self.update_patient_list()
+            self.update_usage()
+            self.last_update_time = time.strftime("%Y-%m-%d %H:%M:%S")
+            self.l_last_update.config(text=f"Letztes Update: {self.last_update_time}")
+        self.root.after(100, self.check_file_modification)
 
-# Function to set the Ambulanznummer and initialize the data
-def set_ambulanznummer():
-    global AmbNum
-    global AmbName
-    global AmbDate
-    global Betreuungen
-    global max_counts
-    global Patlist
-    global last_modification_time
-    filepath = filedialog.askopenfile(filetypes=[("Data-Datei", ".dat")]).name
-    AmbNum, AmbName, AmbDate, Betreuungen, max_counts = read_data(filepath)
-    Patlist = read_list(AmbNum)
-    ambdat_filepath = "PatDat/" + re.sub('[^0-9]', '', AmbNum) + ".ambdat"
-    last_modification_time = os.path.getmtime(ambdat_filepath)
-    update_patient_list()
-    update_usage()
-    l_amb_info.config(text=f"{AmbNum} | {AmbName}")
-    check_file_modification()
 
-# Initialize the main window
-root = tk.Tk()
-root.title("Patientenanzeige")
-
-# Create frames for the input and display
-input_frame = tk.Frame(root)
-input_frame.pack(pady=20)
-
-patient_list_canvas = tk.Canvas(root)
-patient_list_frame = tk.Frame(patient_list_canvas)
-scrollbar = tk.Scrollbar(root, orient="vertical", command=patient_list_canvas.yview)
-patient_list_canvas.configure(yscrollcommand=scrollbar.set)
-
-scrollbar.pack(side="left", fill="y")
-patient_list_canvas.pack(side="left", fill="both", expand=True)
-patient_list_canvas.create_window((0, 0), window=patient_list_frame, anchor="nw")
-
-usage_frame = tk.Frame(root)
-usage_frame.pack(pady=20)
-
-def on_frame_configure(canvas):
-    canvas.configure(scrollregion=canvas.bbox("all"))
-
-patient_list_frame.bind("<Configure>", lambda event, canvas=patient_list_canvas: on_frame_configure(canvas))
-
-# Input for Ambulanznummer
-button_set_amb_num = tk.Button(input_frame, text="Ambulanznummer setzen", command=set_ambulanznummer, font=("Arial", 16))
-button_set_amb_num.pack(side="left")
-
-# Label for last update time
-l_last_update = tk.Label(input_frame, text="Letztes Update: -", font=("Arial", 16))
-l_last_update.pack(side="left", padx=20)
-
-# Label for Ambulanznummer and name
-l_amb_info = tk.Label(input_frame, text=" | ", font=("Arial", 16))
-l_amb_info.pack(side="left", padx=20)
-
-# Global variables
-AmbNum = ""
-AmbName = ""
-AmbDate = ""
-Betreuungen = 0
-Patlist = []
-max_counts = {"Nicht zugeordnet": 100}
-last_modification_time = 0
-last_update_time = "-"
-
-input_frame = tk.Frame(root)
-input_frame.pack(pady=20)
-
-filter_button = tk.Button(input_frame, text="Filter", command=open_filter_menu, font=("Arial", 16))
-filter_button.pack(side="left", padx=20)
-
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = PatientDisplayApp(root)
+    root.mainloop()
