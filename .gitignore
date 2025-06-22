@@ -1,0 +1,6 @@
+/build/
+__pycache__/
+*.spec
+*.pyc
+/build_dashboard.bat
+*.docx

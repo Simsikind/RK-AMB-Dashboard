@@ -14,8 +14,14 @@ import sys
 
 import functions
 import shortcuts
+from secure_io import write_encrypted, read_encrypted
+
+import auth
+
+fernet = auth.load_key_with_pin()
 
 print("Starte Ambulanz-Dashboard")
+
 
 # Function to get the current time
 def now():
@@ -24,7 +30,7 @@ def now():
 
 # Global variables
 
-Version = "1.3.1"
+Version = "1.4.0"
 
 AmbNum = "Ambulanznummer (bitte setzten)"
 AmbName = "Ambulanzname (bitte setzten)"
@@ -118,6 +124,12 @@ while os.path.exists("Userdata/Export") == False:
 while os.path.exists("PatDat") == False:
     os.mkdir("PatDat")
     print("Ordner 'PatDat' erstellt")
+
+ambdat_path = "PatDat/.ambdat"
+if not os.path.exists(ambdat_path):
+    with open(ambdat_path, "wb") as f:
+        pass  # Leere Datei erstellen
+    print(f"Leere .ambdat-Datei erstellt: {ambdat_path}")
 
 # Functions to set global variables
 def setNum(str):
@@ -336,7 +348,7 @@ def Update_lables():
         "Einsatzende:": Patlist[CurrentPatindex].Endt,
         "Protokoll fertig:": Patlist[CurrentPatindex].finished,
         "NACA:": Patlist[CurrentPatindex].Naca,
-        "Kommentar:": Patlist[CurrentPatindex].Comment
+        "Name/Kommentar:": Patlist[CurrentPatindex].Comment
     }
 
     for key, value in values.items():
@@ -478,7 +490,7 @@ def Edit_pat(index):
     e_CurrentPatNACA.insert(0, str(Patlist[index].Naca))
     e_CurrentPatNACA.grid(column=1, row=11)
 
-    l_textr15 = tkinter.Label(Edit, text="Kommentar:")
+    l_textr15 = tkinter.Label(Edit, text="Name/Kommentar:")
     l_textr15.grid(column=0, row=12)
     e_CurrentPatComment = tkinter.Entry(Edit)
     e_CurrentPatComment.insert(0, str(Patlist[index].Comment))
@@ -784,41 +796,15 @@ def write_list(list):
 
     filepath = "PatDat/" + re.sub('[^0-9]', '', AmbNum) + ".ambdat"
 
-    if not os.path.exists(filepath):
-        with open(filepath, 'w+') as file:
-            pickle.dump(Patlist, file)
-    else:
-        print("Die Datei {file_path} existiert schon.")
-        
-
-    with open(filepath, "wb") as fp:
-        pickle.dump(list, fp)
-        print(f"Daten in Datei geschrieben: {filepath}")
-        fp.close()
+    write_encrypted(filepath, list, fernet)
 
 def read_list():
     global AmbName
     global AmbDate
+
     filepath = "PatDat/" + re.sub('[^0-9]', '', AmbNum) + ".ambdat"
 
-    if not os.path.exists(filepath):
-        with open(filepath, 'w+') as file:
-            pickle.dump("", file)
-            file.close()
-    else:
-        print("Die Datei existiert schon.")
-
-    if os.path.getsize(filepath) <= 0:
-        Pat0()
-        fil = open(filepath, 'wb+')
-        pickle.dump(Patlist, fil)
-        fil.close()
-
-    with open(filepath, "rb") as fp:
-        mydata = pickle.load(fp)
-        print(f"Daten aus Datei gelesen: {filepath}")
-        fp.close
-        return mydata
+    return read_encrypted(filepath, fernet)
 
 def Button_read_list():
     global Patlist
@@ -1201,7 +1187,7 @@ labels = [
     ("Einsatzende:", lambda: Patlist[CurrentPatindex].Endt),
     ("Protokoll fertig:", lambda: Patlist[CurrentPatindex].finished),
     ("NACA:", lambda: Patlist[CurrentPatindex].Naca),
-    ("Kommentar:", lambda: Patlist[CurrentPatindex].Comment),
+    ("Name/Kommentar:", lambda: Patlist[CurrentPatindex].Comment),
 ]
 
 label_refs = {}  # dict für spätere Updates
@@ -1240,8 +1226,8 @@ l_Betreuungen.grid(column=1, row=0, padx=5)
 b_newBet = tkinter.Button(button_frame, text="Neue Betreuung", command=NewBetreuung_Button, bg="green")
 b_newBet.grid(column=2, row=0, padx=5, pady=5)
 
-icon = tkinter.PhotoImage(file="image_files/RK.png")
-main_window.wm_iconphoto(False, icon)
+#icon = tkinter.PhotoImage(file="image_files/RK.png")
+#main_window.wm_iconphoto(False, icon)
 
 #shortcut definitions for the main Window
 main_window.bind(shortcuts.DataSave, lambda event: [Button_saveDat()])

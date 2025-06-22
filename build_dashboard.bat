@@ -1,17 +1,23 @@
-del dist\Ambulanz-Dashboard.exe
-rmdir dist
-del Ambulanz-Dashboard.exe
-pyinstaller --onefile --icon=image_files/RK.ico -n "Ambulanz-Dashboard" main.py
-move dist\Ambulanz-Dashboard.exe
-del dist\Ambulanz-Dashboard.exe
-rmdir dist
+@echo off
+echo Starte Buildprozess...
 
+REM Erstelle build Ordner, falls nicht vorhanden
+if not exist build mkdir build
 
-del dist\Patienten-Anzeige.exe
-rmdir dist
-del Patienten-Anzeige.exe
-pyinstaller --onefile --icon=image_files/RK.ico -n "Patienten-Anzeige" patient_viewer.py
-move dist\Patienten-Anzeige.exe
-del dist\Patienten-Anzeige.exe
-rmdir dist
+REM main.pyzu Ambulanz-Dashboard.exe
+pyinstaller --onefile --distpath build --name Ambulanz-Dashboard main.py
+
+REM patient_viewer.py zu Patientenanzeige.exe
+pyinstaller --onefile --distpath build --name Patientenanzeige patient_viewer.py
+
+REM Pinmanager.py zu PIN_Manager.exe
+pyinstaller --onefile --distpath build --name PIN_Manager Pinmanager.py
+
+REM Lösche automatisch alle .spec-Dateien im aktuellen Verzeichnis
+del /q *.spec
+
+REM Entferne __pycache__-Ordner
+rmdir /s /q __pycache__
+
+echo Build abgeschlossen. EXE-Dateien befinden sich im 'build'-Ordner.
 pause

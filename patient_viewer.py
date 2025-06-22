@@ -4,6 +4,8 @@ import pickle
 import os
 import re
 import time
+import auth
+import secure_io
 
 class PatientDisplayApp:
     def __init__(self, root):
@@ -21,6 +23,9 @@ class PatientDisplayApp:
         self.last_update_time = "-"
         self.filter_place = ""
         self.filter_abtransport = ""
+
+        # Schlüssel laden
+        self.fernet = auth.load_key_with_pin()
 
         # GUI-Elemente
         self.setup_gui()
@@ -62,8 +67,7 @@ class PatientDisplayApp:
 
     def read_list(self):
         filepath = f"PatDat/{re.sub('[^0-9]', '', self.amb_num)}.ambdat"
-        with open(filepath, "rb") as fp:
-            self.patlist = pickle.load(fp)
+        self.patlist = secure_io.read_encrypted(filepath, self.fernet)
 
     def update_patient_list(self):
         for widget in self.patient_list_frame.winfo_children():
