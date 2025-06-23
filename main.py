@@ -1,9 +1,7 @@
 import tkinter.filedialog
 from datetime import datetime
-import time
 import tkinter
 from tkinter import ttk
-import pickle
 import csv
 import os
 import re
@@ -11,14 +9,16 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import random
 import sys
-
 import functions
 import shortcuts
 from secure_io import write_encrypted, read_encrypted
-
 import auth
 
 fernet = auth.load_key_with_pin()
+
+filter_status = "alle"
+filter_place = ""
+filter_transport = ""
 
 print("Starte Ambulanz-Dashboard")
 
@@ -229,18 +229,18 @@ def Update_patient_list():
     sorted_patlist = sorted(Patlist, key=lambda p: getattr(p, sort_column), reverse=(sort_order == "desc"))
 
     for patient in sorted_patlist:
+
         if patient.Num == 0:
-            continue  # Skip patient 0
-
-        if filter_active and patient.Endt != "-":
-            continue  # Skip inactive patients if filter is active
-
+            continue
+        if filter_status == "aktiv" and patient.Endt != "-":
+            continue
+        elif filter_status == "entlassen" and patient.Endt == "-":
+            continue
         if filter_place and patient.HSTPlace != filter_place:
-            continue  # Skip patients not in the selected place
-
+            continue
         if filter_transport and patient.TransportAgency != filter_transport:
-            continue  # Skip patients not in the selected transport agency
-
+            continue
+        
         color = "grey" if patient.Endt != "-" else {
             "Rot - I": "red",
             "Gelb - II": "yellow",
@@ -270,55 +270,74 @@ sort_order = "asc"
 
 # Function to open the filter menu
 def open_filter_menu():
+    global filter_status, filter_place, filter_transport
+
     filter_window = tkinter.Toplevel(main_window)
-    filter_window.title("Filter Menü")
+    filter_window.title("Filter Einstellungen")
     filter_window.focus_force()
 
-    global filter_active, filter_place, filter_transport
+    # Variablen vorbereiten
+    status_var = tkinter.StringVar(value=filter_status)
+    place_var = tkinter.StringVar(value=filter_place)
+    abtransport_var = tkinter.StringVar(value=filter_transport)
 
-    filter_active_var = tkinter.BooleanVar(value=filter_active)
-    filter_place_var = tkinter.StringVar(value=filter_place)
-    filter_transport_var = tkinter.StringVar(value=filter_transport)
+    # Trace-Update-Funktionen
+    def update_status_label(*args):
+        l_status.config(text=f"Aktuell: {status_var.get()}")
 
-    tkinter.Checkbutton(filter_window, text="Nur aktive Patienten anzeigen", variable=filter_active_var).grid(row=0, column=0, sticky="w")
+    def update_place_label(*args):
+        l_place.config(text=f"Aktuell: {place_var.get() or 'alle'}")
 
-    tkinter.Label(filter_window, text="Behandlungsplatz:").grid(row=1, column=0, sticky="w")
-    place_options = [""] + list(max_counts.keys())
-    ttk.Combobox(filter_window, textvariable=filter_place_var, values=place_options, state="readonly").grid(row=1, column=1, sticky="w")
+    def update_transport_label(*args):
+        l_transport.config(text=f"Aktuell: {abtransport_var.get() or 'alle'}")
 
-    tkinter.Label(filter_window, text="Abtransport:").grid(row=2, column=0, sticky="w")
-    transport_options = [""] + list(set(patient.TransportAgency for patient in Patlist if patient.TransportAgency))
-    ttk.Combobox(filter_window, textvariable=filter_transport_var, values=transport_options, state="readonly").grid(row=2, column=1, sticky="w")
+    # Traces setzen
+    status_var.trace_add("write", update_status_label)
+    place_var.trace_add("write", update_place_label)
+    abtransport_var.trace_add("write", update_transport_label)
 
-    def apply_filters(event=None):
-        global filter_active, filter_place, filter_transport
-        filter_active = filter_active_var.get()
-        filter_place = filter_place_var.get()
-        filter_transport = filter_transport_var.get()
-        Update_patient_list()
+    # Status-Filter
+    tkinter.Label(filter_window, text="Status:").grid(row=0, column=0, padx=10, pady=10)
+    status_options = ["alle", "aktiv", "entlassen"]
+    tkinter.OptionMenu(filter_window, status_var, *status_options).grid(row=0, column=1, padx=10, pady=10)
+    l_status = tkinter.Label(filter_window, text=f"Aktuell: {status_var.get()}")
+    l_status.grid(row=0, column=2, padx=10)
+
+    # Behandlungsplatz
+    places = sorted(set(p.HSTPlace for p in Patlist if p.HSTPlace.strip()))
+    places.insert(0, "")
+    tkinter.Label(filter_window, text="Behandlungsplatz:").grid(row=1, column=0, padx=10, pady=10)
+    tkinter.OptionMenu(filter_window, place_var, *places).grid(row=1, column=1, padx=10, pady=10)
+    l_place = tkinter.Label(filter_window, text=f"Aktuell: {place_var.get() or 'alle'}")
+    l_place.grid(row=1, column=2, padx=10)
+
+    # Abtransport
+    transports = sorted(set(p.TransportAgency for p in Patlist if p.TransportAgency.strip()))
+    transports.insert(0, "")
+    tkinter.Label(filter_window, text="Abtransport:").grid(row=2, column=0, padx=10, pady=10)
+    tkinter.OptionMenu(filter_window, abtransport_var, *transports).grid(row=2, column=1, padx=10, pady=10)
+    l_transport = tkinter.Label(filter_window, text=f"Aktuell: {abtransport_var.get() or 'alle'}")
+    l_transport.grid(row=2, column=2, padx=10)
+
+    # Anwenden
+    def apply():
+        global filter_status, filter_place, filter_transport
+        filter_status = status_var.get()
+        filter_place = place_var.get()
+        filter_transport = abtransport_var.get()
+        print("[DEBUG] Filter:", filter_status, filter_place, filter_transport)
+        Update_lables()
         filter_window.destroy()
 
-    def reset_filters(event=None):
-        global filter_active, filter_place, filter_transport
-        filter_active = False
-        filter_place = ""
-        filter_transport = ""
-        Update_patient_list()
-        filter_window.destroy()
+    # Zurücksetzen
+    def reset_filters():
+        status_var.set("alle")
+        place_var.set("")
+        abtransport_var.set("")
 
-    tkinter.Button(filter_window, text="Anwenden", command=apply_filters).grid(row=3, column=0, sticky="w")
-    tkinter.Button(filter_window, text="Zurücksetzen", command=reset_filters).grid(row=3, column=1, sticky="w")
+    ttk.Button(filter_window, text="Anwenden", command=apply).grid(row=3, column=0, columnspan=2, pady=10)
+    ttk.Button(filter_window, text="Zurücksetzen", command=reset_filters).grid(row=3, column=2, pady=10)
 
-    filter_window.bind(shortcuts.Confirm, apply_filters)
-    filter_window.bind(shortcuts.Reset, reset_filters)
-
-    filter_window.bind(shortcuts.Cancel, lambda event: filter_window.destroy())
-    filter_window.bind(shortcuts.OnlyActive, lambda event: filter_active_var.set(not filter_active_var.get()))
-
-# Initialize filter variables
-filter_active = False
-filter_place = ""
-filter_transport = ""
 
 # Function to update labels in the main window
 def Update_lables():
@@ -404,7 +423,8 @@ def Edit_pat(index):
     if index == 0:
         return  # Skip patient 0
     
-    Done = tkinter.BooleanVar()
+    
+
     Edit = tkinter.Toplevel(main_window)
     Edit.title("Patient " + str(index) + " bearbeiten")
     Edit.focus_force()
@@ -488,10 +508,17 @@ def Edit_pat(index):
 
     l_textr13 = tkinter.Label(Edit, text="Protokoll fertig:")
     l_textr13.grid(column=0, row=10)
-    c_CurrentPatfin = tkinter.Checkbutton(Edit, variable=Done)
-    c_CurrentPatfin.grid(column=1, row=10)
-    if Patlist[index].finished == 1:
-        c_CurrentPatfin.select()
+
+    finished_var = tkinter.StringVar()
+    finished_var.set("Nein" if not Patlist[index].finished else "Ja")
+
+    optionmenu_finished = tkinter.OptionMenu(Edit, finished_var, "Nein", "Ja")
+    optionmenu_finished.grid(column=1, row=10)
+    l_finished_status = tkinter.Label(Edit, text=f"Aktuell: {finished_var.get()}")
+    l_finished_status.grid(column=2, row=10, padx=5)
+    l_finished_status.config(text=f"Aktuell: {finished_var.get()}")
+    finished_var.trace_add("write", lambda *args: l_finished_status.config(text=f"Aktuell: {finished_var.get()}"))
+
 
     l_textr14 = tkinter.Label(Edit, text="NACA:")
     l_textr14.grid(column=0, row=11)
@@ -507,31 +534,21 @@ def Edit_pat(index):
 
 
     def update_finished_state(*args):
-        if e_CurrentPatHSTt.get() != "-" and l_SelectedPlace.cget("text") != "-" and e_CurrentPatEndt.get() != "-":
-            c_CurrentPatfin.config(state=tkinter.NORMAL)
+        hstt_ok = e_CurrentPatHSTt.get() != "-"
+        place_ok = l_SelectedPlace.cget("text") != "-"
+        endt_ok = e_CurrentPatEndt.get() != "-"
+
+        menu = optionmenu_finished["menu"]
+        menu.delete(0, "end")
+        menu.add_command(label="Nein", command=lambda: finished_var.set("Nein"))
+
+        if hstt_ok and place_ok and endt_ok:
+            optionmenu_finished.config(state=tkinter.NORMAL)
+            menu.add_command(label="Ja", command=lambda: finished_var.set("Ja"))
         else:
-            c_CurrentPatfin.config(state=tkinter.DISABLED)
+            optionmenu_finished.config(state=tkinter.NORMAL)
+            finished_var.set("Nein")
 
-    e_CurrentPatHSTt.bind("<KeyRelease>", update_finished_state)
-    e_CurrentPatEndt.bind("<KeyRelease>", update_finished_state)
-    l_SelectedPlace.bind("<Configure>", update_finished_state)
-
-    b_OK = tkinter.Button(Edit, text="OK", command=lambda: [
-        Patlist[index].setAlarmt(e_CurrentPatAlarmt.get()),
-        Patlist[index].setAlarmstr(e_CurrentPatAlarmstr.get()),
-        Patlist[index].setBOplace(e_CurrentPatBO.get()),
-        Patlist[index].setBOt(e_CurrentPatBot.get()),
-        Patlist[index].setHSTt(e_CurrentPatHSTt.get()),
-        Patlist[index].setTransportOrg(e_CurrentPatTransportAgency.get()),
-        Patlist[index].setEndt(e_CurrentPatEndt.get()),
-        Patlist[index].setNaca(e_CurrentPatNACA.get()),
-        Patlist[index].setTriage(e_CurrentPatTriage.get()),
-        Patlist[index].setfinished(Done.get()),
-        Patlist[index].setComment(e_CurrentPatComment.get()),
-        write_list(Patlist),
-        Update_lables(), 
-        Edit.destroy()
-    ])
 
     def delete_patient_ask():
         if tkinter.messagebox.askyesno("Patient löschen", f"Möchten Sie den Patienten Nr. {index} wirklich löschen?"):
@@ -546,6 +563,24 @@ def Edit_pat(index):
         write_list(Patlist)
         Update_lables()
         auth.log(f"Patient Nr. {index} gelöscht", AmbNum)
+
+    b_OK = tkinter.Button(Edit, text="OK", command=lambda: [
+        Patlist[index].setAlarmt(e_CurrentPatAlarmt.get()),
+        Patlist[index].setAlarmstr(e_CurrentPatAlarmstr.get()),
+        Patlist[index].setBOplace(e_CurrentPatBO.get()),
+        Patlist[index].setBOt(e_CurrentPatBot.get()),
+        Patlist[index].setHSTt(e_CurrentPatHSTt.get()),
+        Patlist[index].setTransportOrg(e_CurrentPatTransportAgency.get()),
+        Patlist[index].setEndt(e_CurrentPatEndt.get()),
+        Patlist[index].setNaca(e_CurrentPatNACA.get()),
+        Patlist[index].setTriage(e_CurrentPatTriage.get()),
+        Patlist[index].setfinished(finished_var.get() == "Ja"),
+        Patlist[index].setComment(e_CurrentPatComment.get()),
+        write_list(Patlist),
+        Update_lables(), 
+        Edit.destroy()
+    ])
+
 
     b_Cancel = tkinter.Button(Edit, text="Abbruch", command=Edit.destroy)
     b_Delete = tkinter.Button(Edit, text="Patient löschen", command=lambda: [delete_patient_ask(), Edit.destroy()], bg="red")
@@ -567,7 +602,7 @@ def Edit_pat(index):
         Patlist[index].setEndt(e_CurrentPatEndt.get()),
         Patlist[index].setNaca(e_CurrentPatNACA.get()),
         Patlist[index].setTriage(e_CurrentPatTriage.get()),
-        Patlist[index].setfinished(Done.get()),
+        Patlist[index].setfinished(finished_var.get() == "Ja"),
         Patlist[index].setComment(e_CurrentPatComment.get()),
         write_list(Patlist),
         Update_lables(), 
@@ -580,8 +615,7 @@ def Edit_pat(index):
     Edit.bind(shortcuts.NowHstTime, lambda event: [e_CurrentPatHSTt.delete(0, tkinter.END), e_CurrentPatHSTt.insert(0, now())])
     Edit.bind(shortcuts.NowEndTime, lambda event: [e_CurrentPatEndt.delete(0, tkinter.END), e_CurrentPatEndt.insert(0, now())])
     Edit.bind(shortcuts.SelectPlace, lambda event: SelectPlace_Window(index, l_SelectedPlace))
-    Edit.bind(shortcuts.ProtocolFinished, lambda event: Done.set(not Done.get()) if c_CurrentPatfin.cget('state') == tkinter.NORMAL else None)
-
+    Edit.bind(shortcuts.ProtocolFinished, lambda event: finished_var.set("Nein" if finished_var.get() == "Ja" else "Ja"))
     auth.log(f"Patient Nr. {index} bearbeitet", AmbNum)
 
 
