@@ -22,7 +22,6 @@ fernet = auth.load_key_with_pin()
 
 print("Starte Ambulanz-Dashboard")
 
-
 # Function to get the current time
 def now():
     currentTime = datetime.now()
@@ -117,6 +116,7 @@ while os.path.exists("Userdata") == False:
     os.mkdir("Userdata")
     print("Ordner 'Userdata' erstellt")
 
+
 while os.path.exists("Userdata/Export") == False:
     os.mkdir("Userdata/Export")
     print("Ordner 'Export' in 'Userdata' erstellt")
@@ -171,6 +171,14 @@ def Update_patient_list():
     global CurrentPatindex
     global filter_active, filter_place, filter_transport
     global sort_column, sort_order
+
+    if not Patlist:
+        l_Pat.config(text="0 Patienten")
+        l_Betreuungen.config(text=str(Betreuungen) + " Betreuungen")
+        l_AmbNum.config(text=AmbNum)
+        l_AmbName.config(text=AmbName)
+        l_AmbDate.config(text=AmbDate)
+        return
 
     def Patclick(idx):
         global CurrentPatindex
@@ -389,6 +397,7 @@ def Update_lables():
     main_window.title(AmbName + (" - Dashboard"))
     Update_patient_list()
     lastUpdate = now()
+    auth.log("Patientenliste aktualisiert", AmbNum)
 
 # Function to edit patient details
 def Edit_pat(index):
@@ -536,6 +545,7 @@ def Edit_pat(index):
         [patient.setNum(Patlist.index(patient)) for patient in Patlist]
         write_list(Patlist)
         Update_lables()
+        auth.log(f"Patient Nr. {index} gelöscht", AmbNum)
 
     b_Cancel = tkinter.Button(Edit, text="Abbruch", command=Edit.destroy)
     b_Delete = tkinter.Button(Edit, text="Patient löschen", command=lambda: [delete_patient_ask(), Edit.destroy()], bg="red")
@@ -571,6 +581,9 @@ def Edit_pat(index):
     Edit.bind(shortcuts.NowEndTime, lambda event: [e_CurrentPatEndt.delete(0, tkinter.END), e_CurrentPatEndt.insert(0, now())])
     Edit.bind(shortcuts.SelectPlace, lambda event: SelectPlace_Window(index, l_SelectedPlace))
     Edit.bind(shortcuts.ProtocolFinished, lambda event: Done.set(not Done.get()) if c_CurrentPatfin.cget('state') == tkinter.NORMAL else None)
+
+    auth.log(f"Patient Nr. {index} bearbeitet", AmbNum)
+
 
 # Function to select a place for the patient
 def SelectPlace_Window(index, l_SelectedPlace):
@@ -630,6 +643,7 @@ def SelectPlace_Window(index, l_SelectedPlace):
 
     SelectPlace.bind(shortcuts.Confirm, select_place)
     SelectPlace.bind(shortcuts.Cancel, lambda event: SelectPlace.destroy())
+    auth.log(f"Behandlungsplatz für Patient Nr. {index} ausgewählt", AmbNum)
 
 # Function to create a new patient
 def NewPat():
@@ -641,6 +655,7 @@ def NewPat():
     write_list(Patlist)
     CurrentPatindex = latestpatindex()
     Edit_pat(CurrentPatindex)
+    auth.log(f"Neuer Patient Nr. {CurrentPatindex} angelegt", AmbNum)
 
 # Function to create a new patient and add them to the end of the list
 def NewPat_Button():
@@ -680,6 +695,7 @@ def NewBetreuung():
     Betreuungen = Betreuungen + 1
     print("Neue Betreuung mit der Nummer", Betreuungen)
     saveDatinFile(filepath)
+    auth.log(f"Neue Betreuung Nr. {Betreuungen} angelegt", AmbNum)
 
 def NewBetreuung_Button():
     NewBetreuung()
@@ -692,6 +708,7 @@ def DelBetreuung():
         Betreuungen = Betreuungen - 1
         print("Eine Betreuung gelöscht, die Neue Nummer ist nun ", Betreuungen, " Betreuungen")
         saveDatinFile(filepath)
+        auth.log(f"Eine betreuung gelöscht", AmbNum)
 
 def DelBetreuung_Button():
     DelBetreuung()
@@ -727,6 +744,8 @@ def Init_Stats():
     place_entries = []
     max_count_entries = []
     remove_buttons = []
+
+    auth.log("Ambulanzdaten initialisiert", AmbNum)
 
     # Function to add a new place row
     def add_place_row(place="", max_count=""):
@@ -778,6 +797,8 @@ def Init_Stats():
         Update_lables()
         Init.destroy()
 
+        auth.log("Ambulanzdaten gespeichert", AmbNum)
+
     b_OK = tkinter.Button(Init, text="OK", command=save_stats)
     b_Cancel = tkinter.Button(Init, text="Abbruch", command=Init.destroy)
 
@@ -798,13 +819,35 @@ def write_list(list):
 
     write_encrypted(filepath, list, fernet)
 
+    auth.log(f"Patientenliste in Datei '{filepath}' geschrieben", AmbNum)
+
 def read_list():
-    global AmbName
-    global AmbDate
+    global AmbNum
+    global Patlist
 
-    filepath = "PatDat/" + re.sub('[^0-9]', '', AmbNum) + ".ambdat"
+    if not AmbNum or not re.search(r'\d', AmbNum):
+        tkinter.messagebox.showerror("Fehler", "Ambulanznummer ist nicht gesetzt.")
+        return []
 
-    return read_encrypted(filepath, fernet)
+    filename = re.sub('[^0-9]', '', AmbNum) + ".ambdat"
+    filepath = os.path.join("PatDat", filename)
+
+    # Wenn die Datei nicht existiert → leer initialisieren & verschlüsseln
+    if not os.path.exists(filepath):
+        write_encrypted(filepath, Patlist, fernet)
+        print(f"Leere Datei verschlüsselt erstellt: {filepath}")
+        return Patlist
+
+    Patlist = read_encrypted(filepath, fernet)
+
+    auth.log(f"Patientenliste aus Datei '{filepath}' gelesen", AmbNum)
+
+    if not Patlist:
+        Pat0()
+
+    return Patlist
+
+
 
 def Button_read_list():
     global Patlist
@@ -840,6 +883,7 @@ def ExportPatlist():
                     
                 ])
     print(f"Daten in Datei geschrieben: {path}")
+    auth.log(f"Patientenliste nach '{path}' exportiert", AmbNum)
 
 def setDatfromFile(path):
     global AmbNum
@@ -848,6 +892,7 @@ def setDatfromFile(path):
     global Betreuungen
     global max_counts
     global filepath
+    global CurrentPatindex
     filepath = path
     with open(path, "r") as File:
         AmbNum = re.sub('\n', '', File.readline())
@@ -858,7 +903,13 @@ def setDatfromFile(path):
         for line in File:
             place, max_count = line.strip().split(":")
             max_counts[place] = int(max_count)
+    
+    Patlist.clear()
+    Pat0()
+    CurrentPatindex = 0
+
     print(f"Daten aus Datei gelesen: {path}")
+    auth.log(f"Patientenliste aus '{path}' geladen", AmbNum)
 
 def Button_setDat():
     filepath = tkinter.filedialog.askopenfile(filetypes=[("Data-Datei",".dat")]).name
@@ -880,6 +931,7 @@ def saveDatinFile(path):
         for place in max_counts:
             File.writelines(f"{place}:{max_counts[place]}\n")
     print(f"Daten in Datei geschrieben: {path}")
+    auth.log(f"Patientenliste in '{path}' gespeichert", AmbNum)
 
 def Button_saveasDat():
     global filepath
@@ -919,6 +971,7 @@ def Patstats():
             place_label = tkinter.Label(stats, text=f"  {place}: {count} Patienten")
             place_label.grid(column=0, row=row)
             row += 1
+    auth.log("Patientenstatistik angezeigt", AmbNum)
 
 def DisplayPatientsInPlace():
     global max_counts
@@ -1066,6 +1119,8 @@ def DetailedStats():
 
     stats.bind(shortcuts.Cancel, lambda event: stats.destroy())
 
+    auth.log("Detaillierte Statistik angezeigt", AmbNum)
+
 # Function to create x patients with random Triage Categories
 def CreateRandomPatients(x):
     global CurrentPatindex
@@ -1076,6 +1131,7 @@ def CreateRandomPatients(x):
         Patlist.append(new_patient)
         CurrentPatindex =+ 1
     Update_lables()
+    auth.log(f"{x} zufällige Patienten erstellt", AmbNum)
 
 patient_list_section_frame = tkinter.LabelFrame(main_window, text="Patientenliste & Filter", padx=10, pady=10)
 patient_list_section_frame.grid(row=0, column=4, rowspan=21, columnspan=20, sticky="nsew", padx=5, pady=5)
@@ -1266,6 +1322,7 @@ def on_closing():
     print("Entwickler: Simon")
     print("Besuchen Sie meine Website für mehr Informationen.")
     print("Programm beendet")
+    auth.log("Programm beendet", AmbNum)
     sys.exit()
 
 main_window.protocol("WM_DELETE_WINDOW", on_closing)

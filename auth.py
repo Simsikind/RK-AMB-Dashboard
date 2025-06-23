@@ -1,6 +1,11 @@
 import os, base64, hashlib
 from cryptography.fernet import Fernet
 from tkinter import Tk, simpledialog, messagebox
+import os
+import datetime
+import getpass
+import socket
+import pwd
 
 PIN_FILE = ".pinfile"
 VERIFICATION_STRING = b"AMBULANZ-VERIFIZIERUNG"
@@ -12,7 +17,7 @@ def derive_key(pin: str, salt: bytes) -> bytes:
 def setup_pin():
     root = Tk()
     root.withdraw()
-    pin = simpledialog.askstring("PIN setzen", "Bitte 4- bis 8-stelligen PIN eingeben:", show="*")
+    pin = simpledialog.askstring("neuen PIN setzen", "Bitte 4- bis 8-stelligen PIN eingeben:", show="*")
     if not pin or not pin.isdigit() or not (4 <= len(pin) <= 8):
         messagebox.showerror("Fehler", "Ungültiger PIN.")
         exit()
@@ -25,7 +30,7 @@ def setup_pin():
     with open(PIN_FILE, "wb") as f:
         f.write(salt + b":" + token)
 
-    messagebox.showinfo("PIN gesetzt", "PIN wurde erfolgreich gespeichert.")
+    messagebox.showinfo("neuen PIN gesetzt", "PIN wurde erfolgreich gespeichert.")
 
 def load_key_with_pin() -> Fernet:
     if not os.path.exists(PIN_FILE):
@@ -69,4 +74,43 @@ def rekey_file(filepath: str, old_fernet: Fernet, new_fernet: Fernet):
 
     except Exception as e:
         print(f"Fehler beim Rekeyen von {filepath}: {e}")
+
+def log(message: str, Ambnum: str = "Unbekannt"):
+    """
+    Protokolliert eine Nachricht mit Zeitstempel, Benutzername und IP-Adresse
+    in die Datei log/<Ambnum>.log.
+
+    :param message: Die zu protokollierende Nachricht
+    :param Ambnum: Die Ambulanznummer zur Zuordnung der Logdatei
+    """
+    # Zielverzeichnis und Datei
+    log_dir = "log"
+    # Nur Ziffern aus Ambnum extrahieren
+    ambnum_digits = ''.join(filter(str.isdigit, Ambnum))
+    log_file = os.path.join(log_dir, f"{ambnum_digits}.log")
+    
+    # Verzeichnisse erstellen, falls nicht vorhanden
+    os.makedirs(log_dir, exist_ok=True)
+
+    # Zeit, Benutzer, IP-Adresse
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        username = pwd.getpwuid(os.getuid()).pw_gecos.split(',')[0]
+    except (ImportError, AttributeError, KeyError):
+        # Fallback für Windows oder falls GECOS nicht gesetzt ist
+        username = getpass.getuser()
+    try:
+        ip_address = socket.gethostbyname(socket.gethostname())
+    except:
+        ip_address = "Unbekannt"
+
+    # Log-Zeile zusammenbauen
+    log_entry = f"[{timestamp}] {username} ({ip_address}): {message}\n"
+
+    # In Datei schreiben (falls nicht vorhanden, wird sie automatisch erstellt)
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(log_entry)
+    
+    print("[LOG]:", log_entry)
+
 
