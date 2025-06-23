@@ -625,58 +625,66 @@ def SelectPlace_Window(index, l_SelectedPlace):
     SelectPlace.title("Behandlungsplatz auswählen")
     SelectPlace.focus_force()
 
-    l_Ausl = tkinter.Label(SelectPlace, text="Auslastung:")
-    l_Ausl.grid(column=0, row=0, columnspan=2)
+    # -------------------- Auslastung oben anzeigen --------------------
+    l_Ausl = tkinter.Label(SelectPlace, text="Auslastung:", font=("Arial", 12, "bold"))
+    l_Ausl.grid(column=0, row=0, columnspan=3, pady=(10, 5))
+
     row = 1
     for place, max_count in max_counts.items():
         current_count = sum(1 for patient in Patlist if patient.HSTPlace == place and patient.Endt == "-")
-        percentage = (current_count / max_count) * 100
+        percentage = (current_count / max_count) * 100 if max_count > 0 else 0
         
-        if percentage >= 80:
+        # Farben je nach Auslastung
+        if percentage >= 100:
             bg_color = "red"
+        elif percentage >= 80:
+            bg_color = "orange"
         elif percentage >= 50:
             bg_color = "yellow"
         else:
             bg_color = "green"
         
-        usage_label = tkinter.Label(SelectPlace, text=f"{place}: {current_count}/{max_count} ({percentage:.2f}%)", bg=bg_color)
-        usage_label.grid(column=0, row=row)
+        usage_label = tkinter.Label(SelectPlace, text=f"{place}: {current_count}/{max_count} ({percentage:.1f}%)", bg=bg_color, anchor="w", width=35)
+        usage_label.grid(column=0, row=row, columnspan=2, sticky="w", padx=10)
         
         progress = ttk.Progressbar(SelectPlace, length=200, mode='determinate')
         progress['value'] = percentage
-        progress.grid(column=1, row=row)
-        
+        progress.grid(column=2, row=row, padx=5, pady=2)
+
         row += 1
 
-    l_SelectPlace = tkinter.Label(SelectPlace, text="Behandlungsplatz auswählen:")
-    l_SelectPlace.grid(column=0, row=row, pady=10)
+    # -------------------- Dropdown-Auswahl + aktuelle Auswahl --------------------
+    place_var = tkinter.StringVar(value=Patlist[index].HSTPlace)
+    l_dropdown_label = tkinter.Label(SelectPlace, text="Behandlungsplatz wählen:")
+    l_dropdown_label.grid(row=row, column=0, padx=10, pady=(15, 5), sticky="e")
 
-    place_var = tkinter.StringVar()
-    place_dropdown = ttk.Combobox(SelectPlace, textvariable=place_var, values=list(max_counts.keys()), state="readonly")
-    place_dropdown.grid(column=1, row=row, pady=10)
+    places = list(max_counts.keys())
+    dropdown = tkinter.OptionMenu(SelectPlace, place_var, *places)
+    dropdown.grid(row=row, column=1, pady=(15, 5), sticky="w")
 
+    l_current = tkinter.Label(SelectPlace, text=f"Aktuell: {place_var.get() or '-'}", font=("Arial", 10))
+    l_current.grid(row=row, column=2, padx=10, sticky="w")
+
+    def update_label(*args):
+        l_current.config(text=f"Aktuell: {place_var.get() or '-'}")
+
+    place_var.trace_add("write", update_label)
+
+    # -------------------- Buttons --------------------
     def select_place(event=None):
         selected_place = place_var.get()
         if selected_place:
             Patlist[index].setHSTPlace(selected_place)
             l_SelectedPlace.config(text=selected_place)
             SelectPlace.destroy()
+            
+
+    b_select = tkinter.Button(SelectPlace, text="Auswählen", command=select_place)
+    b_select.grid(row=row + 1, column=0, columnspan=3, pady=10)
 
     SelectPlace.bind(shortcuts.Confirm, select_place)
     SelectPlace.bind(shortcuts.Cancel, lambda event: SelectPlace.destroy())
 
-    def select_place(event=None):
-        selected_place = place_var.get()
-        if selected_place:
-            Patlist[index].setHSTPlace(selected_place)
-            l_SelectedPlace.config(text=selected_place)
-            SelectPlace.destroy()
-
-    b_Select = tkinter.Button(SelectPlace, text="Auswählen", command=select_place)
-    b_Select.grid(column=0, row=row+1, columnspan=2, pady=10)
-
-    SelectPlace.bind(shortcuts.Confirm, select_place)
-    SelectPlace.bind(shortcuts.Cancel, lambda event: SelectPlace.destroy())
     auth.log(f"Behandlungsplatz für Patient Nr. {index} ausgewählt", AmbNum)
 
 # Function to create a new patient
