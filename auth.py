@@ -5,7 +5,6 @@ import os
 import datetime
 import getpass
 import socket
-import pwd
 
 PIN_FILE = ".pinfile"
 VERIFICATION_STRING = b"AMBULANZ-VERIFIZIERUNG"
@@ -94,11 +93,8 @@ def log(message: str, Ambnum: str = "Unbekannt"):
 
     # Zeit, Benutzer, IP-Adresse
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    try:
-        username = pwd.getpwuid(os.getuid()).pw_gecos.split(',')[0]
-    except (ImportError, AttributeError, KeyError):
-        # Fallback für Windows oder falls GECOS nicht gesetzt ist
-        username = getpass.getuser()
+    username = getpass.getuser()
+    
     try:
         ip_address = socket.gethostbyname(socket.gethostname())
     except:

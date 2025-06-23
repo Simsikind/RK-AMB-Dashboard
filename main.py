@@ -29,7 +29,7 @@ def now():
 
 # Global variables
 
-Version = "1.4.0"
+Version = "1.4"
 
 AmbNum = "Ambulanznummer (bitte setzten)"
 AmbName = "Ambulanzname (bitte setzten)"
