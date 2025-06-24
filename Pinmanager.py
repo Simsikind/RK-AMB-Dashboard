@@ -4,6 +4,7 @@ import auth
 import os
 from cryptography.fernet import Fernet
 from datetime import datetime
+import socket
 
 fernet_global = None
 old_fernet = None
@@ -17,6 +18,17 @@ root.resizable(False, False)
 
 # ------------------- Funktionen -------------------
 
+def get_ip():
+    try:
+        # Dummy-Verbindung zu einem öffentlichen Ziel
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))  # Google DNS
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except:
+        return "Unbekannt"
+
 def log_user_action(action: str):
     filepath = "pin-user_actions.log"
     if not os.path.exists(filepath):
@@ -24,11 +36,11 @@ def log_user_action(action: str):
             f.write("Logdatei für PIN-Verwaltung\n")
 
     user = os.getenv("USER") or os.getenv("USERNAME") or "Unbekannt"
-    ip = os.popen("hostname -I").read().strip() or "Unbekannt"
+    ip = get_ip()
     time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     logstring = f"{time}: {user} [{ip}]: {action}\n"
 
-    print(logstring, file=filepath)
+    print(logstring, file=open(filepath, 'a'))  # Log in Datei schreiben
     print(logstring)  # Ausgabe in die Konsole
 
 def set_new_pin():
@@ -47,9 +59,8 @@ def test_pin():
         log_user_action("PIN-Test erfolgreich")
         messagebox.showinfo("Erfolg", "PIN war korrekt.")
     except Exception as e:
-        log_user_action("PIN-Test fehlgeschlagen")
         messagebox.showerror("Fehler", f"PIN ungültig: {e}")
-        
+    log_user_action("PIN-Test abgeschlossen")    
 
 def rekey_file_gui():
     log_user_action("Rekey gestartet")
@@ -74,6 +85,7 @@ def rekey_file_gui():
     except Exception as e:
         log_user_action(f"Rekey fehlgeschlagen")
         messagebox.showerror("Fehler", f"Rekey fehlgeschlagen: {e}")
+    log_user_action("Rekey abgeschlossen")
         
 
 # ------------------- GUI Elemente -------------------
