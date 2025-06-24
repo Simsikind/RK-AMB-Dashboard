@@ -1060,107 +1060,94 @@ def DisplayPatientsInPlace():
 
     place_window.bind(shortcuts.Cancel, lambda event: place_window.destroy())
 
-def DetailedStats():
-    global Betreuungen
+def DetailedStats(patlist, betreuungen):
+    global max_counts
+    global filepath
+    global main_window
 
-    setDatfromFile(filepath)
+    # Toplevel-Fenster
+    fenster = tkinter.Toplevel(main_window)
+    fenster.title("Detaillierte Statistik")
+    fenster.focus_force()
 
-    stats = tkinter.Toplevel(main_window)
-    stats.title("Detaillierte Statistik")
-    stats.focus_force()
-
-    naca_counts = {1: {}, 2: {}, 3: {}, 4: {}, 5: {}, 6: {}, 7: {}}
+    # Statistische Zählung vorbereiten
+    naca_counts = {n: {} for n in range(1, 8)}
     all_places = set()
 
-    for patient in Patlist:
-        if patient.Num != 0:
-            place = patient.HSTPlace
-            all_places.add(place)
-            if patient.Endt != "-":
-                naca = int(patient.Naca)
-                if place in naca_counts[naca]:
-                    naca_counts[naca][place] += 1
-                else:
-                    naca_counts[naca][place] = 1
+    for patient in patlist:
+        if patient.Num == 0 or patient.Endt == "-":
+            continue
+        try:
+            naca = int(patient.Naca)
+            if 1 <= naca <= 7:
+                place = patient.HSTPlace
+                all_places.add(place)
+                naca_counts[naca][place] = naca_counts[naca].get(place, 0) + 1
+        except (ValueError, TypeError):
+            continue
 
-    # Sort places in the same order as in the .dat file
-    sorted_places = sorted(all_places, key=lambda place: list(max_counts.keys()).index(place) if place in max_counts else len(max_counts))
+    # Behandlungsstellen sortieren
+    sorted_places = sorted(
+        all_places,
+        key=lambda place: list(max_counts.keys()).index(place) if place in max_counts else len(max_counts)
+    )
 
-    # Create header row with NACA scores
-    col = 1
-    for naca in range(1, 8):
-        naca_label = tkinter.Label(stats, text=f"NACA {naca}  |", anchor="w")
-        naca_label.grid(column=col, row=0, sticky="w")
-        col += 1
+    # Kopfzeile (NACA 1–7 + Summe)
+    for col, naca in enumerate(range(1, 8), start=1):
+        tkinter.Label(fenster, text=f"NACA {naca}  |", anchor="w").grid(column=col, row=0, sticky="w")
+    tkinter.Label(fenster, text="Summe", anchor="w").grid(column=8, row=0, sticky="w")
 
-    # Add a header for the sum column
-    sum_header_label = tkinter.Label(stats, text="Summe", anchor="w")
-    sum_header_label.grid(column=col, row=0, sticky="w")
-
-    # Create rows for each place
+    # Zeilen für jede Behandlungsstelle
     row = 1
     for place in sorted_places:
-        place_label = tkinter.Label(stats, text=str(place + ":"), anchor="w")
-        place_label.grid(column=0, row=row, sticky="w")
-        col = 1
+        tkinter.Label(fenster, text=place + ":", anchor="w").grid(column=0, row=row, sticky="w")
         place_sum = 0
-        for naca in range(1, 8):
+        for col, naca in enumerate(range(1, 8), start=1):
             count = naca_counts[naca].get(place, 0)
             place_sum += count
-            count_label = tkinter.Label(stats, text=str(count), anchor="w")
-            count_label.grid(column=col, row=row, sticky="w")
-            col += 1
-        # Add the sum for the place
-        place_sum_label = tkinter.Label(stats, text=str(place_sum), anchor="w")
-        place_sum_label.grid(column=col, row=row, sticky="w")
+            tkinter.Label(fenster, text=str(count), anchor="w").grid(column=col, row=row, sticky="w")
+        tkinter.Label(fenster, text=str(place_sum), anchor="w").grid(column=8, row=row, sticky="w")
+
+        # Trennlinie
+        row += 1
+        tkinter.Frame(fenster, height=1, bd=1, relief="sunken", background="black").grid(column=0, row=row, columnspan=9, sticky="ew", pady=2)
         row += 1
 
-        # Add a thin line separator between places
-        separator = tkinter.Frame(stats, height=1, bd=1, relief="sunken", background="black")
-        separator.grid(column=0, row=row, columnspan=col+1, sticky="ew", pady=2)
-        row += 1
-
-    # Add a thick line separator above the sum row
-    thick_separator = tkinter.Frame(stats, height=2, bd=1, relief="sunken", background="black")
-    thick_separator.grid(column=0, row=row, columnspan=col+1, sticky="ew", pady=5)
-    row += 1
-
-    # Add a last row for the sum
-    sum_label = tkinter.Label(stats, text="Summe:", anchor="w")
-    sum_label.grid(column=0, row=row, sticky="w")
-    col = 1
+    # Summe aller NACA-Werte
     total_counts = {naca: sum(naca_counts[naca].values()) for naca in range(1, 8)}
     total_sum = sum(total_counts.values())
-    for naca in range(1, 8):
-        total_count = total_counts[naca]
-        total_label = tkinter.Label(stats, text=str(total_count), anchor="w")
-        total_label.grid(column=col, row=row, sticky="w")
-        col += 1
-    # Add the total sum
-    total_sum_label = tkinter.Label(stats, text=str(total_sum), anchor="w")
-    total_sum_label.grid(column=col, row=row, sticky="w")
 
-    # Add a label for Betreuungen
-    betreuungen_label = tkinter.Label(stats, text=f"Betreuungen: {Betreuungen}", anchor="w")
-    betreuungen_label.grid(column=0, row=row+1, sticky="w")
+    # Trennlinie vor Gesamtsumme
+    tkinter.Frame(fenster, height=2, bd=1, relief="sunken", background="black").grid(column=0, row=row, columnspan=9, sticky="ew", pady=5)
+    row += 1
 
-    # Create pie charts
-    def create_pie_chart(data, title, row, col):
-        fig, ax = plt.subplots(figsize=(4, 4))  # Smaller figure size
-        filtered_data = {k: v for k, v in data.items() if v > 0}
-        labels = [f"NACA {naca}" for naca in filtered_data.keys()]
-        sizes = filtered_data.values()
+    tkinter.Label(fenster, text="Summe:", anchor="w").grid(column=0, row=row, sticky="w")
+    for col, naca in enumerate(range(1, 8), start=1):
+        tkinter.Label(fenster, text=str(total_counts[naca]), anchor="w").grid(column=col, row=row, sticky="w")
+    tkinter.Label(fenster, text=str(total_sum), anchor="w").grid(column=8, row=row, sticky="w")
+
+    # Betreuungen
+    tkinter.Label(fenster, text=f"Betreuungen: {betreuungen}", anchor="w").grid(column=0, row=row+1, sticky="w")
+
+    # Tortendiagramm
+    def tortendiagramm_zeigen(data, title, zeile, spalte):
+        fig, ax = plt.subplots(figsize=(4, 4))
+        gefiltert = {k: v for k, v in data.items() if v > 0}
+        labels = [f"NACA {k}" for k in gefiltert]
+        sizes = list(gefiltert.values())
         ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
-        ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+        ax.axis("equal")
         ax.set_title(title)
-        canvas = FigureCanvasTkAgg(fig, master=stats)
+        canvas = FigureCanvasTkAgg(fig, master=fenster)
         canvas.draw()
-        canvas.get_tk_widget().grid(column=col, row=row, padx=10, pady=10)
-        
-    create_pie_chart(total_counts, "Summe", row+2, 10)
+        canvas.get_tk_widget().grid(column=spalte, row=zeile, padx=10, pady=10)
 
-    stats.bind(shortcuts.Cancel, lambda event: stats.destroy())
+    tortendiagramm_zeigen(total_counts, "Summe", row+2, 10)
 
+    # Schließen per Tastendruck
+    fenster.bind(shortcuts.Cancel, lambda e: fenster.destroy())
+
+    # Logging
     auth.log("Detaillierte Statistik angezeigt", AmbNum)
 
 # Function to create x patients with random Triage Categories
@@ -1233,7 +1220,7 @@ def open_menu_window():
     b_export = tkinter.Button(menu_window, text="Patienten Exportieren (csv)", command=lambda:[ExportPatlist(), menu_window.destroy()])
     b_export.grid(row=1, column=1)
 
-    b_stats = tkinter.Button(menu_window, text="Statistik anzeigen", command=lambda:[DetailedStats(), menu_window.destroy()])
+    b_stats = tkinter.Button(menu_window, text="Statistik anzeigen", command=lambda:[read_list(), Update_lables(), DetailedStats(Patlist, Betreuungen), menu_window.destroy()])
     b_stats.grid(row=0, column=1)
 
     l_Update = tkinter.Label(menu_window, text="Letztes Patienten Update: " + lastUpdate)
