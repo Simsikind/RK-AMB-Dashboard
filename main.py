@@ -561,6 +561,9 @@ def Edit_pat(index):
         Patlist.pop(index)
         [patient.setNum(Patlist.index(patient)) for patient in Patlist]
         write_list(Patlist)
+        # Sicherstellen, dass CurrentPatindex gültig ist
+        if not Patlist or CurrentPatindex >= len(Patlist):
+            CurrentPatindex = max(0, latestpatindex())
         Update_lables()
         auth.log(f"Patient Nr. {index} gelöscht", AmbNum)
 
@@ -689,45 +692,200 @@ def SelectPlace_Window(index, l_SelectedPlace):
 
 # Function to create a new patient
 def NewPat():
-    read_list()
-    global CurrentPatindex
-    global Patlist
-    print("Neuer Patient mit Ablagenummer ", latestpatindex() + 1)
-    Patlist.append(functions.Patient(latestpatindex() + 1))
-    write_list(Patlist)
-    CurrentPatindex = latestpatindex()
-    Edit_pat(CurrentPatindex)
-    auth.log(f"Neuer Patient Nr. {CurrentPatindex} angelegt", AmbNum)
+    """
+    Erstellt einen neuen Patienten und fügt ihn zur Liste hinzu.
+    
+    Returns:
+        bool: True bei Erfolg, False bei Fehler
+    """
+    try:
+        read_list()
+        global CurrentPatindex
+        global Patlist
+        
+        new_patient_num = latestpatindex() + 1
+        print(f"Neuer Patient mit Ablagenummer {new_patient_num}")
+        
+        # Validierung: Überprüfen ob Patient bereits existiert
+        if any(patient.Num == new_patient_num for patient in Patlist):
+            error_msg = f"Patient mit Nummer {new_patient_num} existiert bereits"
+            tkinter.messagebox.showerror("Fehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return False
+        
+        # Neuen Patienten erstellen
+        try:
+            new_patient = functions.Patient(new_patient_num)
+            Patlist.append(new_patient)
+        except Exception as patient_error:
+            error_msg = f"Fehler beim Erstellen des Patienten: {patient_error}"
+            tkinter.messagebox.showerror("Patientenerstellungsfehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return False
+        
+        # Patientenliste speichern
+        if not write_list(Patlist):
+            # Wenn das Speichern fehlschlägt, Patient wieder entfernen
+            Patlist.pop()
+            error_msg = "Fehler beim Speichern des neuen Patienten"
+            tkinter.messagebox.showerror("Speicherfehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return False
+        
+        CurrentPatindex = latestpatindex()
+        
+        # Sicherstellen, dass CurrentPatindex gültig ist
+        if not Patlist or CurrentPatindex >= len(Patlist):
+            CurrentPatindex = max(0, latestpatindex())
+        
+        auth.log(f"Neuer Patient Nr. {CurrentPatindex} angelegt", AmbNum)
+        return True
+        
+    except Exception as e:
+        error_msg = f"Unerwarteter Fehler beim Erstellen des Patienten: {str(e)}"
+        tkinter.messagebox.showerror("Fehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+        return False
 
 # Function to create a new patient and add them to the end of the list
 def NewPat_Button():
-    top = tkinter.Toplevel(main_window)
-    top.title("Neuer Patient")
-    top.focus_force()
-    l_newPatinfo = tkinter.Label(top, text="Wollen Sie einen neuen Patienten anlegen?")
-    l_newPatinfo.pack()
+    """
+    UI-Funktion zum Erstellen eines neuen Patienten mit Bestätigungsdialog.
+    """
+    try:
+        top = tkinter.Toplevel(main_window)
+        top.title("Neuer Patient")
+        top.focus_force()
+        
+        # Fenster zentrieren
+        top.geometry("300x150")
+        top.transient(main_window)
+        top.grab_set()
+        
+        l_newPatinfo = tkinter.Label(top, text="Wollen Sie einen neuen Patienten anlegen?")
+        l_newPatinfo.pack(pady=20)
 
-    b_OK = tkinter.Button(top, text="Ja", command=lambda: [NewPat(), Update_lables(), top.destroy()])
-    b_Cancel = tkinter.Button(top, text="Nein", command=lambda: [top.destroy()])
+        def create_patient():
+            try:
+                if NewPat():
+                    Update_lables()
+                    top.destroy()
+                    # Nur bei erfolgreichem Erstellen den Editor öffnen
+                    Edit_pat(CurrentPatindex)
+                else:
+                    # Fehler wurde bereits in NewPat() behandelt
+                    pass
+            except Exception as e:
+                error_msg = f"Fehler beim Erstellen des Patienten: {str(e)}"
+                tkinter.messagebox.showerror("Fehler", error_msg)
+                auth.log(f"Fehler: {error_msg}", AmbNum)
 
-    b_OK.pack()
-    b_Cancel.pack()
+        def cancel_creation():
+            try:
+                top.destroy()
+            except Exception as e:
+                auth.log(f"Fehler beim Schließen des Dialogs: {str(e)}", AmbNum)
 
-    top.bind(shortcuts.Confirm, lambda event: [NewPat(), Update_lables(), top.destroy()])
-    top.bind(shortcuts.Cancel, lambda event: [top.destroy()])
+        button_frame = tkinter.Frame(top)
+        button_frame.pack(pady=10)
+
+        b_OK = tkinter.Button(button_frame, text="Ja", command=create_patient, width=10)
+        b_OK.pack(side="left", padx=10)
+
+        b_Cancel = tkinter.Button(button_frame, text="Nein", command=cancel_creation, width=10)
+        b_Cancel.pack(side="left", padx=10)
+
+        # Keyboard shortcuts
+        top.bind(shortcuts.Confirm, lambda event: create_patient())
+        top.bind(shortcuts.Cancel, lambda event: cancel_creation())
+        
+        # Focus auf den OK-Button
+        b_OK.focus_set()
+        
+    except Exception as e:
+        error_msg = f"Fehler beim Öffnen des Patientenerstellungs-Dialogs: {str(e)}"
+        tkinter.messagebox.showerror("UI-Fehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
 
 # Function to delete the current patient
 def DelPat():
-    pass
-    #global CurrentPatindex
-    #if latestpatindex() > 0:
-        #Patlist.pop()
-        #print("Patient mit Nummer ", CurrentPatindex, " gelöscht")
-        #write_list(Patlist)
+    """
+    Löscht den aktuellen Patienten aus der Liste.
+    Diese Funktion war vorher leer - jetzt implementiert.
+    
+    Returns:
+        bool: True bei Erfolg, False bei Fehler
+    """
+    global CurrentPatindex
+    global Patlist
+    
+    try:
+        if not Patlist or CurrentPatindex < 0 or CurrentPatindex >= len(Patlist):
+            error_msg = "Kein gültiger Patient zum Löschen ausgewählt"
+            tkinter.messagebox.showerror("Fehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return False
+        
+        if CurrentPatindex == 0:
+            error_msg = "Der Geisterpatient (Patient 0) kann nicht gelöscht werden"
+            tkinter.messagebox.showerror("Fehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return False
+        
+        # Bestätigung vom Benutzer
+        patient_num = Patlist[CurrentPatindex].Num
+        if not tkinter.messagebox.askyesno("Patient löschen", 
+                                          f"Möchten Sie den Patienten Nr. {patient_num} wirklich löschen?"):
+            return False
+        
+        # Patient löschen
+        deleted_patient = Patlist.pop(CurrentPatindex)
+        
+        # Patientennummern neu zuordnen
+        try:
+            for i, patient in enumerate(Patlist):
+                patient.setNum(i)
+        except Exception as renumber_error:
+            # Patient wieder hinzufügen, falls Neunummerierung fehlschlägt
+            Patlist.insert(CurrentPatindex, deleted_patient)
+            error_msg = f"Fehler beim Neunummerieren der Patienten: {renumber_error}"
+            tkinter.messagebox.showerror("Fehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return False
+        
+        # Liste speichern
+        if not write_list(Patlist):
+            # Patient wieder hinzufügen, falls Speichern fehlschlägt
+            Patlist.insert(CurrentPatindex, deleted_patient)
+            error_msg = "Fehler beim Speichern nach dem Löschen"
+            tkinter.messagebox.showerror("Speicherfehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return False
+        
+        # CurrentPatindex anpassen
+        if CurrentPatindex >= len(Patlist):
+            CurrentPatindex = max(0, len(Patlist) - 1)
+        
+        auth.log(f"Patient Nr. {patient_num} gelöscht", AmbNum)
+        return True
+        
+    except Exception as e:
+        error_msg = f"Unerwarteter Fehler beim Löschen des Patienten: {str(e)}"
+        tkinter.messagebox.showerror("Fehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+        return False
 
 def DelPat_Button():
-    DelPat()
-    Update_lables()
+    """
+    UI-Funktion zum Löschen des aktuellen Patienten.
+    """
+    try:
+        if DelPat():
+            Update_lables()
+    except Exception as e:
+        error_msg = f"Fehler beim Löschen des Patienten: {str(e)}"
+        tkinter.messagebox.showerror("Fehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
 
 # Function to create a new Betreuung
 def NewBetreuung():
@@ -853,41 +1011,140 @@ def Init_Stats():
 
 # Function to write the patient list to a file
 def write_list(list):
+    """
+    Schreibt die Patientenliste verschlüsselt in eine Datei.
+    
+    Args:
+        list: Liste der Patienten
+        
+    Returns:
+        bool: True bei Erfolg, False bei Fehler
+    """
     global AmbName
     global AmbDate
     global AmbNum
 
-    filepath = "PatDat/" + re.sub('[^0-9]', '', AmbNum) + ".ambdat"
+    try:
+        if not AmbNum or not re.search(r'\d', AmbNum):
+            tkinter.messagebox.showerror("Fehler", "Ambulanznummer ist nicht gesetzt oder ungültig.")
+            auth.log("Fehler: Ambulanznummer nicht gesetzt beim Speichern", AmbNum)
+            return False
 
-    write_encrypted(filepath, list, fernet)
+        filepath = "PatDat/" + re.sub('[^0-9]', '', AmbNum) + ".ambdat"
+        
+        # Sicherstellen, dass das Verzeichnis existiert
+        os.makedirs("PatDat", exist_ok=True)
+        
+        # Backup der vorherigen Datei erstellen, falls sie existiert
+        if os.path.exists(filepath):
+            backup_filepath = filepath + ".backup"
+            try:
+                import shutil
+                shutil.copy2(filepath, backup_filepath)
+                auth.log(f"Backup erstellt: {backup_filepath}", AmbNum)
+            except Exception as backup_error:
+                auth.log(f"Warnung: Backup konnte nicht erstellt werden: {backup_error}", AmbNum)
 
-    auth.log(f"Patientenliste in Datei '{filepath}' geschrieben", AmbNum)
+        write_encrypted(filepath, list, fernet)
+        auth.log(f"Patientenliste in Datei '{filepath}' geschrieben", AmbNum)
+        return True
+        
+    except PermissionError:
+        error_msg = f"Keine Berechtigung zum Schreiben in Datei '{filepath}'"
+        tkinter.messagebox.showerror("Berechtigungsfehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+        return False
+    except FileNotFoundError:
+        error_msg = f"Verzeichnis für Datei '{filepath}' konnte nicht erstellt werden"
+        tkinter.messagebox.showerror("Dateifehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+        return False
+    except Exception as e:
+        error_msg = f"Unerwarteter Fehler beim Speichern: {str(e)}"
+        tkinter.messagebox.showerror("Speicherfehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+        return False
 
 def read_list():
+    """
+    Liest die Patientenliste aus einer verschlüsselten Datei.
+    
+    Returns:
+        list: Liste der Patienten oder leere Liste bei Fehler
+    """
     global AmbNum
     global Patlist
+    global CurrentPatindex
 
-    if not AmbNum or not re.search(r'\d', AmbNum):
-        tkinter.messagebox.showerror("Fehler", "Ambulanznummer ist nicht gesetzt.")
-        return []
+    try:
+        if not AmbNum or not re.search(r'\d', AmbNum):
+            error_msg = "Ambulanznummer ist nicht gesetzt oder ungültig."
+            tkinter.messagebox.showerror("Fehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return []
 
-    filename = re.sub('[^0-9]', '', AmbNum) + ".ambdat"
-    filepath = os.path.join("PatDat", filename)
+        filename = re.sub('[^0-9]', '', AmbNum) + ".ambdat"
+        filepath = os.path.join("PatDat", filename)
 
-    # Wenn die Datei nicht existiert → leer initialisieren & verschlüsseln
-    if not os.path.exists(filepath):
-        write_encrypted(filepath, Patlist, fernet)
-        print(f"Leere Datei verschlüsselt erstellt: {filepath}")
+        # Sicherstellen, dass das Verzeichnis existiert
+        os.makedirs("PatDat", exist_ok=True)
+
+        # Wenn die Datei nicht existiert → leer initialisieren & verschlüsseln
+        if not os.path.exists(filepath):
+            try:
+                write_encrypted(filepath, Patlist, fernet)
+                print(f"Leere Datei verschlüsselt erstellt: {filepath}")
+                auth.log(f"Neue verschlüsselte Datei erstellt: {filepath}", AmbNum)
+                return Patlist
+            except Exception as create_error:
+                error_msg = f"Fehler beim Erstellen der neuen Datei: {create_error}"
+                tkinter.messagebox.showerror("Dateierstellungsfehler", error_msg)
+                auth.log(f"Fehler: {error_msg}", AmbNum)
+                return []
+
+        try:
+            Patlist = read_encrypted(filepath, fernet)
+            auth.log(f"Patientenliste aus Datei '{filepath}' gelesen", AmbNum)
+        except Exception as decrypt_error:
+            error_msg = f"Fehler beim Entschlüsseln der Datei: {decrypt_error}"
+            tkinter.messagebox.showerror("Entschlüsselungsfehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            
+            # Versuche Backup zu laden, falls vorhanden
+            backup_filepath = filepath + ".backup"
+            if os.path.exists(backup_filepath):
+                try:
+                    Patlist = read_encrypted(backup_filepath, fernet)
+                    tkinter.messagebox.showinfo("Backup wiederhergestellt", 
+                                               "Die Hauptdatei war beschädigt, aber das Backup konnte wiederhergestellt werden.")
+                    auth.log(f"Patientenliste aus Backup '{backup_filepath}' wiederhergestellt", AmbNum)
+                except Exception as backup_error:
+                    error_msg = f"Auch das Backup konnte nicht geladen werden: {backup_error}"
+                    tkinter.messagebox.showerror("Backup-Fehler", error_msg)
+                    auth.log(f"Fehler: {error_msg}", AmbNum)
+                    return []
+            else:
+                return []
+
+        if not Patlist:
+            Pat0()
+
+        # Sicherstellen, dass CurrentPatindex gültig ist
+        if not Patlist or CurrentPatindex >= len(Patlist):
+            CurrentPatindex = max(0, latestpatindex())
+
         return Patlist
 
-    Patlist = read_encrypted(filepath, fernet)
-
-    auth.log(f"Patientenliste aus Datei '{filepath}' gelesen", AmbNum)
-
-    if not Patlist:
-        Pat0()
-
-    return Patlist
+    except PermissionError:
+        error_msg = f"Keine Berechtigung zum Lesen der Datei '{filepath}'"
+        tkinter.messagebox.showerror("Berechtigungsfehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+        return []
+    except Exception as e:
+        error_msg = f"Unerwarteter Fehler beim Laden: {str(e)}"
+        tkinter.messagebox.showerror("Ladefehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+        return []
 
 
 
@@ -899,89 +1156,318 @@ def Button_read_list():
     Update_lables()
 
 def ExportPatlist():
-    path = 'Userdata/Export/' + re.sub(r'\W+', '_', AmbNum) + "_" + AmbName + '.csv'
-    with open(path, 'w', newline='', encoding='ansi') as csvfile:
-        spamwriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        spamwriter.writerow(["Pat-Nr", "Alarmzeit", "B.Grund", "BO", "BO-Zeit", "HST-Zeit", "Sichtungs-Kat", "Behandlungsstelle", "Abtransport", "NACA", "Fertig", "Kommentar", str(Betreuungen) + " Betreuungen"])
-        for x in range(len(Patlist)):
-            if x > 0:
-                is_finished = "Nein"
-                if Patlist[x].finished == True:
-                    is_finished = "Ja"
-
-                spamwriter.writerow([
-                    Patlist[x].Num,
-                    Patlist[x].Alarmt, 
-                    Patlist[x].Alarmstr, 
-                    Patlist[x].BOplace, 
-                    Patlist[x].BOt, 
-                    Patlist[x].HSTt,
-                    Patlist[x].Triage, 
-                    Patlist[x].HSTPlace,
-                    Patlist[x].TransportAgency, 
-                    Patlist[x].Naca, 
-                    is_finished,
-                    Patlist[x].Comment
-                    
+    """
+    Exportiert die Patientenliste als CSV-Datei.
+    
+    Returns:
+        bool: True bei Erfolg, False bei Fehler
+    """
+    try:
+        if not Patlist:
+            tkinter.messagebox.showwarning("Warnung", "Keine Patienten zum Exportieren vorhanden.")
+            return False
+        
+        if not AmbNum or not AmbName:
+            error_msg = "Ambulanznummer oder -name ist nicht gesetzt"
+            tkinter.messagebox.showerror("Fehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return False
+        
+        # Sicherstellen, dass das Export-Verzeichnis existiert
+        export_dir = 'Userdata/Export'
+        os.makedirs(export_dir, exist_ok=True)
+        
+        # Dateipfad erstellen
+        safe_ambnum = re.sub(r'\W+', '_', AmbNum)
+        safe_ambname = re.sub(r'\W+', '_', AmbName)
+        path = os.path.join(export_dir, f"{safe_ambnum}_{safe_ambname}.csv")
+        
+        # CSV-Export
+        try:
+            with open(path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                
+                # Header schreiben
+                writer.writerow([
+                    "Pat-Nr", "Alarmzeit", "B.Grund", "BO", "BO-Zeit", 
+                    "HST-Zeit", "Sichtungs-Kat", "Behandlungsstelle", 
+                    "Abtransport", "NACA", "Fertig", "Kommentar", 
+                    f"{Betreuungen} Betreuungen"
                 ])
-    print(f"Daten in Datei geschrieben: {path}")
-    auth.log(f"Patientenliste nach '{path}' exportiert", AmbNum)
+                
+                # Patientendaten schreiben
+                exported_count = 0
+                for patient in Patlist:
+                    if patient.Num > 0:  # Patient 0 nicht exportieren
+                        try:
+                            is_finished = "Ja" if patient.finished else "Nein"
+                            
+                            writer.writerow([
+                                patient.Num,
+                                patient.Alarmt,
+                                patient.Alarmstr,
+                                patient.BOplace,
+                                patient.BOt,
+                                patient.HSTt,
+                                patient.Triage,
+                                patient.HSTPlace,
+                                patient.TransportAgency,
+                                patient.Naca,
+                                is_finished,
+                                patient.Comment
+                            ])
+                            exported_count += 1
+                        except Exception as row_error:
+                            auth.log(f"Fehler beim Exportieren von Patient {patient.Num}: {row_error}", AmbNum)
+                            continue
+                
+                if exported_count == 0:
+                    error_msg = "Keine gültigen Patienten zum Exportieren gefunden"
+                    tkinter.messagebox.showerror("Fehler", error_msg)
+                    auth.log(f"Fehler: {error_msg}", AmbNum)
+                    return False
+        
+        except PermissionError:
+            error_msg = f"Keine Berechtigung zum Schreiben in Datei '{path}'"
+            tkinter.messagebox.showerror("Berechtigungsfehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return False
+        except UnicodeEncodeError:
+            # Fallback auf ANSI-Encoding versuchen
+            try:
+                with open(path, 'w', newline='', encoding='ansi') as csvfile:
+                    writer = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                    # Header und Daten erneut schreiben (vereinfacht)
+                    writer.writerow(["Pat-Nr", "Alarmzeit", "Kommentar", f"{Betreuungen} Betreuungen"])
+                    for patient in Patlist:
+                        if patient.Num > 0:
+                            writer.writerow([patient.Num, patient.Alarmt, patient.Comment])
+            except Exception as fallback_error:
+                error_msg = f"Encoding-Fehler beim Export: {fallback_error}"
+                tkinter.messagebox.showerror("Encoding-Fehler", error_msg)
+                auth.log(f"Fehler: {error_msg}", AmbNum)
+                return False
+        
+        print(f"Daten in Datei geschrieben: {path}")
+        tkinter.messagebox.showinfo("Export erfolgreich", f"Patientenliste wurde nach '{path}' exportiert.")
+        auth.log(f"Patientenliste nach '{path}' exportiert", AmbNum)
+        return True
+        
+    except Exception as e:
+        error_msg = f"Unerwarteter Fehler beim Export: {str(e)}"
+        tkinter.messagebox.showerror("Export-Fehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+        return False
 
 def setDatfromFile(path):
-    global AmbNum
-    global AmbName
-    global AmbDate
-    global Betreuungen
-    global max_counts
-    global filepath
-    global CurrentPatindex
-    filepath = path
-    with open(path, "r") as File:
-        AmbNum = re.sub('\n', '', File.readline())
-        AmbName = re.sub('\n', '', File.readline())
-        AmbDate = re.sub('\n', '', File.readline())
-        Betreuungen = int(re.sub('\n', '', File.readline()))
-        max_counts = {}
-        for line in File:
-            place, max_count = line.strip().split(":")
-            max_counts[place] = int(max_count)
+    """
+    Lädt Ambulanzdaten aus einer Datei.
     
-    Patlist.clear()
-    Pat0()
-    CurrentPatindex = 0
-
-    print(f"Daten aus Datei gelesen: {path}")
-    auth.log(f"Patientenliste aus '{path}' geladen", AmbNum)
+    Args:
+        path: Dateipfad zum Laden
+        
+    Returns:
+        bool: True bei Erfolg, False bei Fehler
+    """
+    global AmbNum, AmbName, AmbDate, Betreuungen, max_counts, filepath, CurrentPatindex
+    
+    try:
+        if not path or not os.path.exists(path):
+            error_msg = f"Datei '{path}' existiert nicht"
+            tkinter.messagebox.showerror("Dateifehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return False
+        
+        filepath = path
+        
+        with open(path, "r", encoding='utf-8') as file:
+            lines = file.readlines()
+            
+            if len(lines) < 4:
+                error_msg = f"Datei '{path}' hat ein ungültiges Format (zu wenige Zeilen)"
+                tkinter.messagebox.showerror("Formatfehler", error_msg)
+                auth.log(f"Fehler: {error_msg}", AmbNum)
+                return False
+            
+            try:
+                AmbNum = lines[0].strip()
+                AmbName = lines[1].strip()
+                AmbDate = lines[2].strip()
+                Betreuungen = int(lines[3].strip())
+            except (ValueError, IndexError) as parse_error:
+                error_msg = f"Fehler beim Parsen der Grunddaten: {parse_error}"
+                tkinter.messagebox.showerror("Formatfehler", error_msg)
+                auth.log(f"Fehler: {error_msg}", AmbNum)
+                return False
+            
+            # Behandlungsplätze laden
+            max_counts = {}
+            for line_num, line in enumerate(lines[4:], start=5):
+                line = line.strip()
+                if ':' in line:
+                    try:
+                        place, max_count = line.split(":", 1)
+                        max_counts[place] = int(max_count)
+                    except (ValueError, IndexError) as place_error:
+                        auth.log(f"Warnung: Ungültiger Behandlungsplatz in Zeile {line_num}: {place_error}", AmbNum)
+                        continue
+        
+        # Patientenliste zurücksetzen
+        Patlist.clear()
+        Pat0()
+        CurrentPatindex = 0
+        
+        # Sicherstellen, dass CurrentPatindex gültig ist
+        if not Patlist or CurrentPatindex >= len(Patlist):
+            CurrentPatindex = max(0, latestpatindex())
+        
+        print(f"Daten aus Datei gelesen: {path}")
+        auth.log(f"Ambulanzdaten aus '{path}' geladen", AmbNum)
+        return True
+        
+    except PermissionError:
+        error_msg = f"Keine Berechtigung zum Lesen der Datei '{path}'"
+        tkinter.messagebox.showerror("Berechtigungsfehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+        return False
+    except UnicodeDecodeError:
+        # Fallback auf andere Encodings versuchen
+        try:
+            with open(path, "r", encoding='ansi') as file:
+                lines = file.readlines()
+                # Vereinfachte Verarbeitung für Fallback
+                if len(lines) >= 4:
+                    AmbNum = lines[0].strip()
+                    AmbName = lines[1].strip()
+                    AmbDate = lines[2].strip()
+                    Betreuungen = int(lines[3].strip())
+                    return True
+        except Exception as fallback_error:
+            error_msg = f"Encoding-Fehler beim Laden: {fallback_error}"
+            tkinter.messagebox.showerror("Encoding-Fehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return False
+    except Exception as e:
+        error_msg = f"Unerwarteter Fehler beim Laden: {str(e)}"
+        tkinter.messagebox.showerror("Ladefehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+        return False
 
 def Button_setDat():
-    filepath = tkinter.filedialog.askopenfile(filetypes=[("Data-Datei",".dat")]).name
-    setDatfromFile(filepath)
-    Button_read_list()
-    Update_lables()
+    """
+    UI-Funktion zum Laden von Ambulanzdaten aus einer Datei.
+    """
+    try:
+        file_dialog = tkinter.filedialog.askopenfile(filetypes=[("Data-Datei", "*.dat")])
+        if file_dialog is None:
+            # Benutzer hat abgebrochen
+            return
+        
+        filepath = file_dialog.name
+        file_dialog.close()
+        
+        if not os.path.exists(filepath):
+            error_msg = f"Datei '{filepath}' existiert nicht"
+            tkinter.messagebox.showerror("Dateifehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return
+        
+        setDatfromFile(filepath)
+        Button_read_list()
+        Update_lables()
+        
+    except PermissionError:
+        error_msg = "Keine Berechtigung zum Lesen der ausgewählten Datei"
+        tkinter.messagebox.showerror("Berechtigungsfehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+    except Exception as e:
+        error_msg = f"Fehler beim Laden der Datei: {str(e)}"
+        tkinter.messagebox.showerror("Ladefehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
 
 def saveDatinFile(path):
-    global AmbNum
-    global AmbName
-    global AmbDate
-    global Betreuungen
-    global max_counts
-    with open(path, "w") as File:
-        File.writelines(AmbNum + "\n")
-        File.writelines(AmbName + "\n")
-        File.writelines(AmbDate + "\n")
-        File.writelines(str(Betreuungen) + "\n")
-        for place in max_counts:
-            File.writelines(f"{place}:{max_counts[place]}\n")
-    print(f"Daten in Datei geschrieben: {path}")
-    auth.log(f"Patientenliste in '{path}' gespeichert", AmbNum)
+    """
+    Speichert Ambulanzdaten in eine Datei.
+    
+    Args:
+        path: Dateipfad zum Speichern
+        
+    Returns:
+        bool: True bei Erfolg, False bei Fehler
+    """
+    global AmbNum, AmbName, AmbDate, Betreuungen, max_counts
+    
+    try:
+        if not path:
+            error_msg = "Kein Dateipfad angegeben"
+            tkinter.messagebox.showerror("Fehler", error_msg)
+            auth.log(f"Fehler: {error_msg}", AmbNum)
+            return False
+        
+        # Verzeichnis erstellen, falls es nicht existiert
+        directory = os.path.dirname(path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        
+        with open(path, "w", encoding='utf-8') as file:
+            file.write(f"{AmbNum}\n")
+            file.write(f"{AmbName}\n")
+            file.write(f"{AmbDate}\n")
+            file.write(f"{Betreuungen}\n")
+            
+            for place, count in max_counts.items():
+                if place and str(count).isdigit():
+                    file.write(f"{place}:{count}\n")
+        
+        print(f"Daten in Datei geschrieben: {path}")
+        auth.log(f"Ambulanzdaten in '{path}' gespeichert", AmbNum)
+        return True
+        
+    except PermissionError:
+        error_msg = f"Keine Berechtigung zum Schreiben in Datei '{path}'"
+        tkinter.messagebox.showerror("Berechtigungsfehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+        return False
+    except Exception as e:
+        error_msg = f"Unerwarteter Fehler beim Speichern: {str(e)}"
+        tkinter.messagebox.showerror("Speicherfehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+        return False
 
 def Button_saveasDat():
-    global filepath
-    filepath = tkinter.filedialog.asksaveasfile(filetypes=[("Data-Datei",".dat")]).name
-    saveDatinFile(filepath)
-    Button_read_list()
-    Update_lables()
-    print(filepath)
+    """
+    UI-Funktion zum Speichern von Ambulanzdaten unter einem neuen Namen.
+    """
+    try:
+        file_dialog = tkinter.filedialog.asksaveasfile(
+            filetypes=[("Data-Datei", "*.dat")],
+            defaultextension=".dat"
+        )
+        if file_dialog is None:
+            # Benutzer hat abgebrochen
+            return
+        
+        global filepath
+        filepath = file_dialog.name
+        file_dialog.close()
+        
+        if not saveDatinFile(filepath):
+            error_msg = "Fehler beim Speichern der Datei"
+            tkinter.messagebox.showerror("Speicherfehler", error_msg)
+            return
+        
+        Button_read_list()
+        Update_lables()
+        print(f"Datei gespeichert unter: {filepath}")
+        
+    except PermissionError:
+        error_msg = "Keine Berechtigung zum Schreiben in den ausgewählten Ordner"
+        tkinter.messagebox.showerror("Berechtigungsfehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
+    except Exception as e:
+        error_msg = f"Fehler beim Speichern: {str(e)}"
+        tkinter.messagebox.showerror("Speicherfehler", error_msg)
+        auth.log(f"Fehler: {error_msg}", AmbNum)
 
 def Button_saveDat():
     global filepath
@@ -1362,20 +1848,26 @@ def check_file_modification():
     global last_modification_time
     global CurrentPatindex
     ambdat_filepath = "PatDat/" + re.sub('[^0-9]', '', AmbNum) + ".ambdat"
-    current_modification_time = os.path.getmtime(ambdat_filepath)
-    if current_modification_time != last_modification_time:
-        last_modification_time = current_modification_time
-        Patlist = read_list()
-        if CurrentPatindex >= latestpatindex():
-            CurrentPatindex = latestpatindex()
-        Update_lables()
-        Update_patient_list()
-        
-    main_window.after(10, check_file_modification)  # Check every 10 milliseconds (1 second)
+    try:
+        current_modification_time = os.path.getmtime(ambdat_filepath)
+        if current_modification_time != last_modification_time:
+            last_modification_time = current_modification_time
+            Patlist = read_list()
+            if CurrentPatindex > latestpatindex():
+                CurrentPatindex = latestpatindex()
+            Update_lables()
+            Update_patient_list()
+    except FileNotFoundError:
+        # Datei existiert (noch) nicht, einfach ignorieren oder initialisieren
+        pass
+    main_window.after(1000, check_file_modification)  # Check every 1 second
 
-# Initialize the last modification time
+# Initialisierung:
 ambdat_filepath = "PatDat/" + re.sub('[^0-9]', '', AmbNum) + ".ambdat"
-last_modification_time = os.path.getmtime(ambdat_filepath)
+try:
+    last_modification_time = os.path.getmtime(ambdat_filepath)
+except FileNotFoundError:
+    last_modification_time = 0
 
 # Start checking the file modification time
 check_file_modification()
