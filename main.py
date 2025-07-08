@@ -1,3 +1,5 @@
+# file: main.py
+
 import tkinter.filedialog
 from datetime import datetime
 import tkinter
@@ -628,16 +630,46 @@ def SelectPlace_Window(index, l_SelectedPlace):
     SelectPlace.title("Behandlungsplatz auswählen")
     SelectPlace.focus_force()
 
-    # -------------------- Auslastung oben anzeigen --------------------
     l_Ausl = tkinter.Label(SelectPlace, text="Auslastung:", font=("Arial", 12, "bold"))
-    l_Ausl.grid(column=0, row=0, columnspan=3, pady=(10, 5))
+    l_Ausl.grid(column=0, row=0, columnspan=4, pady=(10, 5))
 
     row = 1
+    triage_colors = {
+        "Rot - I": "red",
+        "Gelb - II": "yellow",
+        "Grün - III": "green",
+        "Blau - IV": "blue",
+        "Schwarz (tot) - V": "black",
+        "-": "white"
+    }
+    triage_weights = {
+        "Rot - I": 3,
+        "Gelb - II": 2,
+        "Grün - III": 1,
+        "Blau - IV": 1,
+        "Schwarz (tot) - V": 1,
+        "-": 1
+    }
+
+    # Gewichte für den aktuellen Patienten
+    patient_triage = Patlist[index].Triage
+    current_weight = triage_weights.get(patient_triage, 1)
+
+    lowest_load = float("inf")
+    suggestion = None
+
     for place, max_count in max_counts.items():
-        current_count = sum(1 for patient in Patlist if patient.HSTPlace == place and patient.Endt == "-")
-        percentage = (current_count / max_count) * 100 if max_count > 0 else 0
-        
-        # Farben je nach Auslastung
+        # Zählen pro Kategorie
+        triage_counts = {triage: 0 for triage in TriageCategories[1:]}
+        for patient in Patlist:
+            if patient.HSTPlace == place and patient.Endt == "-":
+                if patient.Triage in triage_counts:
+                    triage_counts[patient.Triage] += 1
+
+        total_count = sum(triage_counts.values())
+        percentage = (total_count / max_count) * 100 if max_count > 0 else 0
+
+        # Farb-Label
         if percentage >= 100:
             bg_color = "red"
         elif percentage >= 80:
@@ -646,44 +678,91 @@ def SelectPlace_Window(index, l_SelectedPlace):
             bg_color = "yellow"
         else:
             bg_color = "green"
-        
-        usage_label = tkinter.Label(SelectPlace, text=f"{place}: {current_count}/{max_count} ({percentage:.1f}%)", bg=bg_color, anchor="w", width=35)
+
+        usage_label = tkinter.Label(
+            SelectPlace,
+            text=f"{place}: {total_count}/{max_count} ({percentage:.1f}%)",
+            bg=bg_color,
+            anchor="w",
+            width=35
+        )
         usage_label.grid(column=0, row=row, columnspan=2, sticky="w", padx=10)
-        
-        progress = ttk.Progressbar(SelectPlace, length=200, mode='determinate')
-        progress['value'] = percentage
-        progress.grid(column=2, row=row, padx=5, pady=2)
+
+        # Balken-Canvas
+        c_width = 200
+        c_height = 20
+        canvas = tkinter.Canvas(
+            SelectPlace,
+            width=c_width,
+            height=c_height,
+            bg="#cccccc",
+            highlightthickness=1,
+            highlightbackground="black"
+        )
+        canvas.grid(column=2, row=row, padx=5, pady=2)
+
+        # Rechtecke zeichnen
+        x = 0
+        for triage, count in triage_counts.items():
+            width = (count / max_count) * c_width if max_count > 0 else 0
+            color = triage_colors.get(triage, "grey")
+            if count > 0:
+                canvas.create_rectangle(x, 0, x + width, c_height, fill=color, outline="")
+                if width >= 20:
+                    canvas.create_text(x + width / 2, c_height / 2, text=str(count), fill="black")
+            x += width
+
+        # Vorschlagsberechnung: gewichtete Last (prozentual)
+        total_weighted = sum(
+            triage_weights.get(triage, 1) * count
+            for triage, count in triage_counts.items()
+        )
+        if max_count > 0:
+            relative_load_with_new = (total_weighted + current_weight) / max_count
+        else:
+            relative_load_with_new = float("inf")
+
+        if relative_load_with_new < lowest_load:
+            lowest_load = relative_load_with_new
+            suggestion = place
 
         row += 1
 
-    # -------------------- Dropdown-Auswahl + aktuelle Auswahl --------------------
-    place_var = tkinter.StringVar(value=Patlist[index].HSTPlace)
-    l_dropdown_label = tkinter.Label(SelectPlace, text="Behandlungsplatz wählen:")
-    l_dropdown_label.grid(row=row, column=0, padx=10, pady=(15, 5), sticky="e")
+    # Vorschlag anzeigen
+    l_suggestion = tkinter.Label(SelectPlace, text=f"Vorschlag: {suggestion}", fg="blue", font=("Arial", 12, "bold"))
+    l_suggestion.grid(row=row, column=0, columnspan=2, pady=(10, 5))
 
+    def apply_suggestion():
+        place_var.set(suggestion)
+
+    b_apply = tkinter.Button(SelectPlace, text="Vorschlag übernehmen", command=apply_suggestion)
+    b_apply.grid(row=row, column=2, pady=(10, 5))
+
+    # Dropdown + aktueller Platz
+    row += 1
+    place_var = tkinter.StringVar(value=Patlist[index].HSTPlace)
+    tkinter.Label(SelectPlace, text="Behandlungsplatz wählen:").grid(row=row, column=0, padx=10, pady=(15, 5), sticky="e")
     places = list(max_counts.keys())
     dropdown = tkinter.OptionMenu(SelectPlace, place_var, *places)
     dropdown.grid(row=row, column=1, pady=(15, 5), sticky="w")
 
-    l_current = tkinter.Label(SelectPlace, text=f"Aktuell: {place_var.get() or '-'}", font=("Arial", 10))
-    l_current.grid(row=row, column=2, padx=10, sticky="w")
+    l_current = tkinter.Label(SelectPlace, text=f"Aktuell: {place_var.get() or '-'}")
+    l_current.grid(row=row, column=2, padx=10)
 
     def update_label(*args):
         l_current.config(text=f"Aktuell: {place_var.get() or '-'}")
 
     place_var.trace_add("write", update_label)
 
-    # -------------------- Buttons --------------------
     def select_place(event=None):
         selected_place = place_var.get()
         if selected_place:
             Patlist[index].setHSTPlace(selected_place)
             l_SelectedPlace.config(text=selected_place)
             SelectPlace.destroy()
-            
 
     b_select = tkinter.Button(SelectPlace, text="Auswählen", command=select_place)
-    b_select.grid(row=row + 1, column=0, columnspan=3, pady=10)
+    b_select.grid(row=row+1, column=0, columnspan=3, pady=10)
 
     SelectPlace.bind(shortcuts.Confirm, select_place)
     SelectPlace.bind(shortcuts.Cancel, lambda event: SelectPlace.destroy())
@@ -1714,8 +1793,8 @@ def open_menu_window():
     l_version = tkinter.Label(menu_window, text="AMB-Dash-Version: "+Version)
     l_version.grid(column=0, row=6)
 
-    #b_create_random_patients = tkinter.Button(menu_window, text="Erstelle zufällige Patienten", command=lambda: [CreateRandomPatients(10), menu_window.destroy()])
-    #b_create_random_patients.grid(row=4, column=0)
+    b_create_random_patients = tkinter.Button(menu_window, text="Erstelle zufällige Patienten", command=lambda: [CreateRandomPatients(10), menu_window.destroy()])
+    b_create_random_patients.grid(row=10, column=0)
 
 # Create frames for the buttons and labels
 # ------------------------- Frames -------------------------

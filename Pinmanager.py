@@ -1,3 +1,5 @@
+#file: pinmanager.py
+
 import tkinter as tk
 from tkinter import simpledialog, messagebox, filedialog
 import auth

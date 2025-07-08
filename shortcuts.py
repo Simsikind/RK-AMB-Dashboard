@@ -1,4 +1,4 @@
-# Description: This file contains the shortcuts for the application.
+# file: shortcuts.py.
 
 #universal shortcuts
 Confirm = "<Return>"

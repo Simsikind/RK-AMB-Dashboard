@@ -11,3 +11,4 @@ __pycache__/
 *.ambdat
 *.dat
 *.csv
+*.ambdat.backup

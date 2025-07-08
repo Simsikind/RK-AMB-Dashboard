@@ -1,3 +1,5 @@
+#file: auth.py
+
 import os, base64, hashlib
 from cryptography.fernet import Fernet
 from tkinter import Tk, simpledialog, messagebox
