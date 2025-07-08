@@ -660,7 +660,7 @@ def SelectPlace_Window(index, l_SelectedPlace):
 
     for place, max_count in max_counts.items():
         # Zählen pro Kategorie
-        triage_counts = {triage: 0 for triage in TriageCategories[1:]}
+        triage_counts = {triage: 0 for triage in TriageCategories}
         for patient in Patlist:
             if patient.HSTPlace == place and patient.Endt == "-":
                 if patient.Triage in triage_counts:
