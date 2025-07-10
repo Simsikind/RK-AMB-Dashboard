@@ -23,7 +23,7 @@ FilterMenu="<Control-f>"
 AuslastungMenu="<Control-u>"
 
 #Betreuungen shortcuts
-BetreuungNew = "<Control-+>"
+BetreuungNew = "<Control-Shift-n>"
 BetreuungDel = "<Control-Shift-Delete>"
 
 #Patient Edit shortcuts
